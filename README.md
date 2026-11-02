@@ -223,4 +223,5 @@ src/
 - **Preview does not show the latest edits:** Run `npm run build` again before `npm run preview`.
 - **Production build reports a large-chunk warning:** The bundled reference CSV contributes to the client bundle. This is a warning, not a build failure.
 #   L H C  
+ #   L H C  
  
