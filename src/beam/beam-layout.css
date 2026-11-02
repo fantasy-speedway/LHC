@@ -1,0 +1,13 @@
+.beam-setup-note { border: 1px solid var(--line); background: #0b171c; padding: 12px; }
+.beam-setup-note > span, .beam-setup-note > strong { display: block; }
+.beam-setup-note > strong { color: var(--ink); font-size: 9px; font-weight: 500; margin-top: 6px; }
+.beam-setup-note p { color: var(--muted); font-size: 8px; line-height: 1.5; margin: 5px 0 0; }
+.beam-control-page > .beam-speed-control { display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--line); background: #0b171c; padding: 10px 12px; }
+.beam-control-page > .beam-speed-control > span { margin: 0; }
+.beam-control-page > .beam-speed-control > div { gap: 6px; }
+
+@media (max-width: 760px) {
+  .beam-panels { grid-template-columns: minmax(0, 1fr); }
+  .beam-graphs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .beam-control-page > .beam-speed-control { align-items: start; flex-direction: column; gap: 8px; }
+}

@@ -1,0 +1,24 @@
+.settings-page { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 3px; }
+.settings-header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.settings-header h3 { margin: 4px 0; color: #edf5f2; font: 600 25px 'Barlow Condensed', sans-serif; }
+.settings-header p { color: var(--muted); font-size: 9px; margin: 0; }
+.settings-session-badge { border: 1px solid #315057; color: var(--cyan); padding: 7px 9px; font-size: 7px; letter-spacing: .06em; }
+.settings-section, .settings-note { border: 1px solid var(--line); background: #0b171c; padding: 13px; }
+.settings-toggle { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding-top: 12px; cursor: pointer; }
+.settings-toggle > span { display: grid; gap: 5px; }
+.settings-toggle strong { color: var(--ink); font-size: 10px; font-weight: 500; }
+.settings-toggle small { color: var(--muted); font-size: 8px; line-height: 1.5; }
+.settings-toggle input { flex: 0 0 auto; width: 34px; height: 18px; accent-color: var(--cyan); }
+.settings-note h4 { margin: 6px 0; color: var(--ink); font: 500 17px 'Barlow Condensed', sans-serif; }
+.settings-note p { color: var(--muted); font-size: 8px; line-height: 1.6; margin: 0; }
+
+.control-room.reduced-motion *, .control-room.reduced-motion *::before, .control-room.reduced-motion *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: .01ms !important;
+}
+
+@media (max-width: 560px) {
+  .settings-header { flex-direction: column; }
+}

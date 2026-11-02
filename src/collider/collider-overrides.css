@@ -1,0 +1,7 @@
+.collider-map-column { position: relative; z-index: 2; }
+.collider-control-deck, .collider-live-strip { position: relative; z-index: 3; }
+.collider-inspector-column { position: relative; z-index: 1; }
+.collider-map-context { display: flex; flex: 1; align-items: start; gap: 5px 10px; flex-wrap: wrap; }
+.collider-map-context p { flex: 1 1 100%; color: var(--muted); font-size: 8px; line-height: 1.45; margin: 0; }
+.collider-map-context button { border: 1px solid #315057; background: transparent; color: var(--cyan); padding: 6px 8px; font-size: 7px; cursor: pointer; }
+.collider-map-context button:hover { border-color: var(--cyan); }

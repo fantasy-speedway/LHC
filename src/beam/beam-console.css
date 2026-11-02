@@ -1,0 +1,197 @@
+.beam-control-console {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: auto;
+  border-color: #718084;
+  border-radius: 4px;
+  background: linear-gradient(145deg, #30383a, #171f22 32%, #283033);
+  box-shadow: inset 0 1px #a0a8a6, inset 0 -2px #111719, 0 8px 24px #0008;
+  padding: 10px;
+}
+
+.beam-control-console .operation-sequence-header { flex: 0 0 auto; }
+.beam-control-console .beam-control-reference { flex: 0 0 auto; }
+.beam-control-console .console-readout-strip { flex: 0 0 auto; }
+.beam-control-console .console-lower-banks { flex: 0 0 auto; }
+.beam-control-reference { align-items: start; }
+
+.beam-console-main-grid {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(280px, 1.3fr) minmax(190px, 1fr);
+  align-items: stretch;
+  gap: 7px;
+}
+
+.beam-channel-bank {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-self: stretch;
+}
+
+.beam-channel-bank > header > small { color: #aeb8b3; }
+.beam-channel-bank.beam-channel-a > header > small { color: #65f39c; }
+.beam-channel-bank.beam-channel-b > header > small { color: #f0bfe0; }
+.beam-channel-bank.beam-channel-b { border-color: #a17b98; }
+
+.beam-channel-readout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid #495355;
+  border-radius: 2px;
+  background: linear-gradient(160deg, #30383a, #1a2224);
+  box-shadow: inset 0 1px #626a68, inset 0 -1px #0e1416;
+  margin-top: 5px;
+  padding: 5px;
+}
+
+.beam-channel-readout .beam-particle-symbol {
+  width: 26px;
+  height: 26px;
+  border-color: #50766e;
+  color: #65f39c;
+  font-size: 11px;
+}
+
+.beam-channel-b .beam-channel-readout .beam-particle-symbol { border-color: #8d5d80; color: #f0bfe0; }
+.beam-channel-readout small, .beam-channel-readout strong { display: block; }
+.beam-channel-readout small { color: #b6c0bd; font: 5px 'IBM Plex Mono', monospace; }
+.beam-channel-readout strong { color: #eef0ea; font-size: 8px; margin-top: 3px; }
+
+.beam-channel-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  border: 1px solid #495355;
+  background: linear-gradient(160deg, #30383a, #1a2224);
+  box-shadow: inset 0 1px #626a68, inset 0 -1px #0e1416;
+  margin-top: 5px;
+  padding: 7px;
+}
+
+.beam-channel-controls label {
+  display: block;
+  color: #c1cbc6;
+  font: 5px 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+}
+
+.beam-channel-controls output { float: right; color: #65f39c; font-size: 6px; }
+.beam-channel-b .beam-channel-controls output { color: #f0bfe0; }
+
+.beam-channel-controls select {
+  display: block;
+  width: 100%;
+  min-height: 23px;
+  border: 1px solid #141b1e;
+  border-radius: 2px;
+  background: linear-gradient(#1b2528, #101719);
+  box-shadow: inset 0 1px 3px #000;
+  color: #e4e9e5;
+  margin-top: 4px;
+  padding: 5px;
+  font: 6px 'IBM Plex Mono', monospace;
+}
+
+.beam-channel-controls input[type='range'] { display: block; width: 100%; height: 12px; margin: 3px 0 0; accent-color: #65f39c; }
+.beam-channel-b .beam-channel-controls input[type='range'] { accent-color: #e990c8; }
+.beam-channel-controls select:disabled, .beam-channel-controls input:disabled { opacity: .48; }
+
+.beam-channel-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.beam-channel-progress { display: flex; align-items: center; gap: 5px; min-height: 12px; color: #b6c0bd; font: 5px 'IBM Plex Mono', monospace; }
+.beam-channel-progress > i { flex: 0 0 6px; width: 6px; height: 6px; border-radius: 50%; background: #59615f; }
+.beam-channel-progress > i.active { background: #ffd05e; box-shadow: 0 0 5px #ffd05e; }
+.beam-channel-command progress { display: block; width: 100%; height: 3px; accent-color: #ffd05e; }
+
+.beam-channel-command button {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid #aeb8b3;
+  border-radius: 2px;
+  background: linear-gradient(#656e6d, #3b4444 50%, #293033);
+  box-shadow: inset 0 1px #c4cbc6, 0 2px #14191a;
+  color: #f0f3ed;
+  padding: 6px;
+  font: 600 6px 'IBM Plex Mono', monospace;
+  cursor: pointer;
+}
+
+.beam-channel-a .beam-channel-command button:hover:not(:disabled), .beam-channel-a .beam-channel-command button:focus-visible {
+  border-color: #f6c75a;
+  background: linear-gradient(#e9bd50, #a56d1e);
+  box-shadow: inset 0 1px #ffe4a0, 0 2px #30220c;
+  color: #1d170c;
+}
+
+.beam-channel-b .beam-channel-command button:hover:not(:disabled), .beam-channel-b .beam-channel-command button:focus-visible {
+  border-color: #edb5dc;
+  background: linear-gradient(#c27aad, #74446a);
+  box-shadow: inset 0 1px #f4d0e9, 0 2px #21151f;
+  color: #fff4fb;
+}
+
+.beam-channel-command button:disabled { cursor: not-allowed; opacity: .55; }
+
+.beam-status-screen { min-height: 0; }
+.beam-status-screen .beam-screen-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  border: 1px solid #1c3b43;
+  border-bottom: 0;
+  background: #061116;
+  padding: 7px;
+}
+
+.beam-screen-metrics > span { min-width: 0; color: #8ca4a5; font: 5px 'IBM Plex Mono', monospace; }
+.beam-screen-metrics strong { display: block; overflow: hidden; color: #d9e8e2; font-size: 6px; font-weight: 500; margin-top: 2px; text-overflow: ellipsis; white-space: nowrap; }
+.beam-ring-visual { position: relative; display: grid; min-height: 205px; flex: 1; align-items: center; border: 1px solid #1c3b43; background-color: #061116; background-image: linear-gradient(#17303a55 1px, transparent 1px), linear-gradient(90deg, #17303a55 1px, transparent 1px); background-size: 16px 16px; }
+.beam-ring-visual > svg { display: block; width: 100%; max-height: 235px; }
+.beam-screen-readouts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; border: 1px solid #1c3b43; border-top: 0; background: #081317; padding: 7px; }
+.beam-screen-readouts > span { color: #91a5a3; font: 5px 'IBM Plex Mono', monospace; }
+.beam-screen-readouts strong { display: block; color: #5de7a4; font-size: 7px; font-weight: 500; margin-top: 3px; }
+.beam-screen-readouts i { display: inline-block; width: 5px; height: 5px; margin-right: 4px; border-radius: 50%; vertical-align: 1px; }
+.beam-channel-a-light { background: #59d7cd; box-shadow: 0 0 5px #59d7cd; }
+.beam-channel-b-light { background: #e990c8; box-shadow: 0 0 5px #e990c8; }
+
+.beam-console-lower > .console-bank { min-width: 0; min-height: 102px; }
+.beam-diagnostic-bank > header > small { color: #aeb8b3; }
+.beam-diagnostic-bank > .energy-graph { margin: 10px 4px 2px; }
+.beam-diagnostic-bank .energy-graph svg { height: 35px; }
+.beam-instrument-readings { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 9px 5px 3px; }
+.beam-instrument-readings > span { color: #b6c0bd; font: 5px 'IBM Plex Mono', monospace; }
+.beam-instrument-readings strong { display: block; color: #5de7a4; font-size: 7px; font-weight: 500; margin-top: 3px; }
+.beam-speed-bank .beam-speed-control { padding: 9px 5px 4px; }
+.beam-speed-bank .beam-speed-control > span { color: #b6c0bd; font: 5px 'IBM Plex Mono', monospace; }
+.beam-speed-bank .beam-speed-control > div { flex-wrap: wrap; gap: 3px; }
+.beam-speed-bank .beam-speed-control button { border-color: #77817e; border-radius: 2px; background: linear-gradient(#48504f, #252c2e); box-shadow: inset 0 1px #89918d, 0 1px #14191a; color: #d4dcd7; padding: 5px; font: 5px 'IBM Plex Mono', monospace; }
+.beam-speed-bank .beam-speed-control button.active { border-color: #f6c75a; background: linear-gradient(#e9bd50, #a56d1e); color: #1d170c; }
+.beam-control-console > .operation-disclaimer { flex: 0 0 auto; }
+
+@media (max-width: 1100px) {
+  .beam-console-main-grid { grid-template-columns: minmax(170px, 1fr) minmax(235px, 1.2fr) minmax(170px, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .beam-console-main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .beam-status-screen { grid-column: 1 / -1; grid-row: 1; }
+  .beam-console-lower { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .beam-console-main-grid, .beam-console-lower { grid-template-columns: minmax(0, 1fr); }
+  .beam-status-screen { grid-column: 1; }
+  .beam-control-console .operation-sequence-header { align-items: start; }
+  .beam-control-reference { flex-direction: column; gap: 4px; }
+}

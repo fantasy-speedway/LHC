@@ -1,0 +1,8 @@
+function formatRate(rate) {
+  return rate < 1 ? rate.toFixed(2) : rate.toFixed(1)
+}
+
+export default function CollisionPanel({ simulation, onEndFill }) {
+  const latest = simulation.latestCollision
+  return <div className="collision-panel"><div className="section-heading">COLLISION EVENTS <span>{simulation.operationPhase === 'COLLISIONS' ? 'LIVE' : 'STANDBY'}</span></div><div className="collision-metrics"><span>TOTAL<strong>{simulation.collisions}</strong></span><span>DETECTED<strong>{simulation.detectedParticles}</strong></span><span>AVG ENERGY<strong>{simulation.averageEventEnergy.toFixed(2)}<small> GeV</small></strong></span><span>RATE<strong>{formatRate(simulation.collisionRate)}<small> / ns</small></strong></span></div>{latest ? <div className="latest-event"><div className="event-title"><b>{latest.label}</b><span>{latest.sourceParticle.toUpperCase()}</span></div><div className="event-summary">{latest.particles.map((particle) => particle.type).join(' · ')}</div><div className="event-detail">{latest.detectedParticles} detected / {latest.particles.length} secondaries</div><button className="event-pause" onClick={onEndFill} disabled={simulation.operationPhase !== 'COLLISIONS'}>END FILL AFTER NEXT EVENT</button></div> : <div className="event-empty">Awaiting beam intersection at collision chamber.</div>}<div className="event-history"><span className="history-label">EVENT HISTORY</span>{simulation.eventHistory.slice().reverse().map((event) => <div className="history-row" key={event.id}><b>{event.label}</b><span>{event.particles.length} tracks</span><span>{event.totalEnergy.toFixed(2)} GeV</span></div>)}</div></div>
+}

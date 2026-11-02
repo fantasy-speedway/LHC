@@ -1,0 +1,3 @@
+export default function NotificationCenter({ notifications, open, onToggle }) {
+  return <div className="notification-center"><button className="utility-button notification-trigger" onClick={onToggle} title="Open system notifications" aria-label="Open system notifications">⌁<i /></button>{open && <div className="notification-popover"><div className="popover-title">SYSTEM NOTIFICATIONS <span>LIVE</span></div>{notifications.map((notification) => <div className={`notification-row ${notification.type}`} key={notification.id}><i /> <div><b>{notification.title}</b><span>{notification.message}</span><small>{notification.time}</small></div></div>)}</div>}</div>
+}

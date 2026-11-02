@@ -1,0 +1,3 @@
+export default function Sidebar({ items, activeView, onSelect }) {
+  return <aside className="sidebar"><div className="side-label">NAVIGATION</div><nav>{items.map(([label, icon]) => <button className={activeView === label ? 'nav-item active' : 'nav-item'} key={label} onClick={() => onSelect(label)}><span className="nav-icon">{icon}</span>{label}{label === 'Overview' && <i className="nav-indicator" />}</button>)}</nav><div className="sidebar-foot"><span className="side-label">OPERATOR</span><div className="operator"><span className="avatar">AK</span><span><b>A. KOVACS</b><small>CONTROL ROOM 04</small></span><span className="operator-dot" /></div></div></aside>
+}

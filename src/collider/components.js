@@ -1,0 +1,12 @@
+export const colliderComponents = [
+  { id: 'injection-a', name: 'Beam Injection A', type: 'INJECTION', angle: -2.5, status: 'READY', value: '4.00 GeV', health: '99.4%', activity: 'Beam source standby', description: 'Fictional injection gate for introducing the first simulated beam packet into the ring.' },
+  { id: 'acceleration-north', name: 'Acceleration Section N', type: 'ACCELERATION', angle: -1.45, status: 'NOMINAL', value: '12.8 MV', health: '98.9%', activity: 'RF field stable', description: 'Simplified accelerating cavity section that increments the simulated beam energy.' },
+  { id: 'steering-east', name: 'Steering Section E', type: 'STEERING', angle: -0.4, status: 'NOMINAL', value: '0.04 mrad', health: '99.1%', activity: 'Orbit correction idle', description: 'Fictional steering magnets keep the beam packet centered on its circular orbit.' },
+  { id: 'detector', name: 'Detector D-01', type: 'DETECTOR', angle: 0.55, status: 'READY', value: '98.7%', health: '99.8%', activity: 'Awaiting events', description: 'Primary observation zone for recording simplified collision signatures.' },
+  { id: 'collision', name: 'Collision Point', type: 'COLLISION', angle: 1.58, status: 'IDLE', value: '0 events/s', health: '100%', activity: 'Sequence inactive', description: 'Configured interaction point where opposing simulated beams may cross.' },
+  { id: 'beam-dump', name: 'Beam Dump / Safe Shutdown', type: 'BEAM DUMP', angle: 2.55, status: 'ARMED', value: 'SAFE', health: '100%', activity: 'Standby', description: 'Fictional safe termination section for ending a beam sequence without operational detail.' },
+  { id: 'steering-west', name: 'Steering Section W', type: 'STEERING', angle: 3.55, status: 'NOMINAL', value: '0.02 mrad', health: '99.2%', activity: 'Orbit correction idle', description: 'Secondary steering section for maintaining a stable simulated orbit.' },
+  { id: 'monitoring', name: 'Monitoring Point M-04', type: 'MONITOR', angle: 4.45, status: 'LIVE', value: '60.0 Hz', health: '99.6%', activity: 'Telemetry streaming', description: 'Non-invasive fictional monitoring point used to expose ring telemetry.' },
+]
+
+export const checkNames = ['Vacuum system', 'Beam system', 'Detector', 'Control system', 'Safety systems']

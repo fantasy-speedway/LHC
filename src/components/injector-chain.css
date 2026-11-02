@@ -1,0 +1,30 @@
+.injector-chain { flex: 0 0 auto; border: 1px solid var(--line); background: #0b171c; padding: 12px; }
+.injector-chain-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.injector-chain-header h3 { margin: 3px 0 0; color: #edf5f2; font: 600 18px 'Barlow Condensed', sans-serif; }
+.injector-reference-badge { border: 1px solid #315057; padding: 6px 8px; color: var(--amber); font-size: 7px; letter-spacing: .6px; text-align: center; }
+.injector-stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; padding: 0; margin: 0; list-style: none; }
+.injector-stage { min-width: 0; position: relative; }
+.injector-stage:not(:last-child)::after { content: '›'; position: absolute; z-index: 1; top: 22px; right: -7px; color: var(--faint); font-size: 16px; pointer-events: none; }
+.injector-stage button { width: 100%; height: 100%; min-height: 82px; display: grid; justify-items: center; align-content: center; gap: 3px; border: 1px solid var(--line); background: #091419; color: var(--muted); padding: 6px 3px; text-align: center; }
+.injector-stage button:hover, .injector-stage.active button { border-color: var(--cyan); color: var(--ink); background: #102329; }
+.injector-stage.passed button { border-color: #315057; }
+.injector-stage svg { width: 29px; height: 29px; fill: none; stroke: #55757a; stroke-width: 1.4; }
+.injector-stage.active svg, .injector-stage.passed svg { stroke: var(--cyan); }
+.injector-stage-name { color: inherit; font-size: 8px; font-weight: 600; }
+.injector-stage-energy { color: var(--cyan); font-size: 8px; }
+.injector-stage-particle { color: var(--muted); font-size: 7px; }
+.injector-chain-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line); }
+.injector-chain-footer p { flex: 1 1 auto; max-width: none; color: var(--muted); font-size: 8px; line-height: 1.5; margin: 0; }
+.injector-chain-footer p strong { color: var(--ink); font-weight: 500; }
+.injector-chain-controls { display: flex; flex: 0 0 auto; justify-content: flex-end; align-items: center; gap: 5px; flex-wrap: nowrap; }
+.injector-chain-controls span { color: var(--muted); font-size: 7px; letter-spacing: .4px; margin-right: 3px; }
+.injector-chain-controls button { border: 1px solid #315057; background: transparent; color: var(--ink); padding: 7px 8px; font-size: 7px; white-space: nowrap; }
+.injector-chain-controls button:last-child { border-color: #507e7d; color: var(--cyan); }
+.injector-chain-controls button:disabled { opacity: .4; cursor: not-allowed; }
+@media (max-width: 800px) {
+  .injector-chain-header { align-items: flex-start; flex-direction: column; }
+  .injector-stages { grid-template-columns: repeat(5, minmax(90px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+  .injector-chain-footer { align-items: flex-start; flex-direction: column; }
+  .injector-chain-footer p { max-width: none; }
+  .injector-chain-controls { justify-content: flex-start; flex-wrap: wrap; }
+}
