@@ -83,3 +83,4 @@
   .review-controls { justify-content: start; }
   .event-display-actions { flex-wrap: wrap; justify-content: end; }
 }
+.experiment-model-note { margin: 10px 0 0; color: var(--muted); font-size: 8px; line-height: 1.55; }

@@ -164,5 +164,6 @@ export default function DetectorCanvas({ event, response, display, rotation, zoo
     onParticleSelect(closest?.id ?? null)
   }
 
-  return <canvas ref={canvasRef} onClick={handleCanvasClick} className="detector-canvas" aria-label="Animated detector display with recorded CMS reference tracks" />
+  const isDataInformedSimulation = event?.eventMode === 'DATA_INFORMED_SIMULATION'
+  return <canvas ref={canvasRef} onClick={handleCanvasClick} className="detector-canvas" aria-label={isDataInformedSimulation ? 'Animated detector display with CMS-template-based simulated tracks' : 'Animated detector display with recorded CMS reference tracks'} />
 }

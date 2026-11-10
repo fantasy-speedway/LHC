@@ -6,7 +6,7 @@ export function loadCompletedExperiments() {
 
 export function saveCompletedExperiment(experiment) {
   const existing = loadCompletedExperiments().filter((item) => item.id !== experiment.id)
-  localStorage.setItem(storageKey, JSON.stringify([experiment, ...existing].slice(0, 24)))
+  localStorage.setItem(storageKey, JSON.stringify([experiment, ...existing]))
 }
 
 export function deleteCompletedExperiment(id) {

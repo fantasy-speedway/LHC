@@ -1,4 +1,5 @@
 import cmsDimuonCsv from '../data/cms-2010-jpsi-dimuon.csv?raw'
+import { createDataInformedEvent } from './data-informed.js'
 
 const cmsDimuonEvents = (() => {
   const [headerLine, ...lines] = cmsDimuonCsv.trim().split(/\r?\n/)
@@ -30,12 +31,7 @@ const cmsDimuonEvents = (() => {
   return rows
 })()
 
-let nextCmsDimuonEvent = 0
-
-export function createCollisionEvent({ eventNumber, time }) {
-  const record = cmsDimuonEvents[nextCmsDimuonEvent]
-  nextCmsDimuonEvent = (nextCmsDimuonEvent + 1) % cmsDimuonEvents.length
-
+function createEventFromRecord(record, eventNumber, time) {
   const particles = [1, 2].map((index) => {
     const value = (field) => Number(record[`${field}${index}`])
     const px = value('px')
@@ -68,6 +64,7 @@ export function createCollisionEvent({ eventNumber, time }) {
     time,
     sourceParticle: 'J/ψ → μ+μ−',
     dataOrigin: 'CERN Open Data',
+    eventMode: 'RECORDED_CERN',
     sourceRecordId: 301,
     sourceRun: Number(record.Run),
     sourceEventId: Number(record.Event),
@@ -77,4 +74,26 @@ export function createCollisionEvent({ eventNumber, time }) {
     detectedParticles: particles.length,
     particles,
   }
+}
+
+const cmsDimuonTemplates = cmsDimuonEvents.map((record, index) =>
+  createEventFromRecord(record, index + 1, 0))
+
+export function getCmsDimuonDataset() {
+  return cmsDimuonEvents.map((record, index) => createEventFromRecord(record, index + 1, 0))
+}
+
+export function createCollisionEvent({
+  eventNumber,
+  time,
+  beamDiagnostics,
+  beam,
+}) {
+  return createDataInformedEvent({
+    eventNumber,
+    time,
+    templates: cmsDimuonTemplates,
+    beamDiagnostics,
+    beam,
+  })
 }

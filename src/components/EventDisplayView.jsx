@@ -127,7 +127,7 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
   return (
     <div className="event-display-view">
       <div className="event-display-toolbar">
-        <div><span className="section-kicker">EVENT DISPLAY / SOURCE REVIEW</span><h3>Recorded Event Review</h3></div>
+        <div><span className="section-kicker">EVENT DISPLAY / PROVENANCE REVIEW</span><h3>Recorded and Data-Informed Events</h3></div>
         <div className="event-display-actions">
           <button className="save-event" onClick={saveEvent} disabled={!currentEvent}>{savedRecord ? '✓ SAVED' : '⇩ SAVE EVENT'}</button>
           <span>{currentEvent?.label ?? 'NO EVENT LOADED'}</span>
@@ -221,6 +221,13 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
               <span>SOURCE RUN / EVENT</span><strong>{currentEvent.sourceRun} / {currentEvent.sourceEventId}</strong>
               <span>COLLISION ENERGY</span><strong>Unavailable in bundled CSV</strong>
               <span>SOURCE TIMESTAMP</span><strong>Unavailable in bundled CSV</strong>
+            </>}
+            {currentEvent?.eventMode === 'DATA_INFORMED_SIMULATION' && <>
+              <span>EVENT TYPE</span><strong>DATA-INFORMED SIMULATION · NOT A RECORDED COLLISION</strong>
+              <span>RESAMPLED CMS TEMPLATE</span><strong>RUN {currentEvent.templateSource.runNumber} / EVENT {currentEvent.templateSource.eventNumber}</strong>
+              <span>RECONSTRUCTED M(μμ)</span><strong>{currentEvent.invariantMass == null ? 'Unavailable' : `${currentEvent.invariantMass.toFixed(3)} GeV`}</strong>
+              <span>RECORDED TEMPLATE MASS</span><strong>{currentEvent.templateInvariantMassGeV.toFixed(3)} GeV</strong>
+              <span>BEAM ENERGY</span><strong>{currentEvent.simulatedCollisionContext.centerOfMassEnergyGeV == null ? 'Unavailable' : `${(currentEvent.simulatedCollisionContext.centerOfMassEnergyGeV / 1000).toFixed(3)} TeV modeled √s; template momenta not rescaled`}</strong>
             </>}
             <span>SIMULATION TIMESTAMP</span><strong>{currentEvent ? `${currentEvent.time.toFixed(3)} ns` : '—'}</strong>
             <span>MODEL SCORE</span><strong className="score">{currentEvent?.interestingScore == null ? 'NOT IN SOURCE DATA' : `${currentEvent.interestingScore}/100`}</strong>

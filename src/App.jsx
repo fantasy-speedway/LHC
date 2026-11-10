@@ -20,6 +20,7 @@ import StartupSequence from "./components/StartupSequence";
 import HelpModal from "./components/HelpModal";
 import NotificationCenter from "./components/NotificationCenter";
 import IncidentPopup from "./components/IncidentPopup";
+import "./mobile.css";
 
 const engine = createSimulationEngine();
 const initialNotifications = [

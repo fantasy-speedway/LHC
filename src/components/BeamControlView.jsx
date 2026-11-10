@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { particleOptions } from '../beam/particles'
+import { calculateBeamDiagnostics } from '../physics/beam-physics'
 import BeamEnergyGraph from './BeamEnergyGraph'
 import '../simulation/operation-sequence.css'
 import '../beam/beam-control.css'
@@ -8,6 +9,10 @@ import '../beam/beam-layout.css'
 
 const speeds = [0.25, 0.5, 1, 2, 5, 10]
 const CONFIG_LOAD_MS = 5000
+
+function formatEnergy(energyGeV) {
+  return energyGeV >= 1000 ? `${(energyGeV / 1000).toFixed(2)} TeV` : `${energyGeV.toFixed(1)} GeV`
+}
 
 function readout(label, value, ready) {
   return (
@@ -52,8 +57,8 @@ function BeamChannelBank({
             {particleOptions.map((option) => <option value={option.value} key={option.value}>{option.label} / {option.symbol}</option>)}
           </select>
         </label>
-        <label>TARGET ENERGY <output>{beam[targetKey].toFixed(1)} GeV</output>
-          <input disabled={controlsLocked} type="range" min="6" max="24" step="0.5" value={beam[targetKey]} onChange={(event) => onChange({ [targetKey]: Number(event.target.value) })} />
+        <label>TARGET ENERGY         <output>{formatEnergy(beam[targetKey])}</output>
+        <input disabled={controlsLocked} type="range" min="6" max="6800" step="1" value={beam[targetKey]} onChange={(event) => onChange({ [targetKey]: Number(event.target.value) })} />
         </label>
         <label>BEAM INTENSITY <output>{beam[intensityKey]}%</output>
           <input disabled={controlsLocked} type="range" min="10" max="100" step="1" value={beam[intensityKey]} onChange={(event) => onChange({ [intensityKey]: Number(event.target.value) })} />
@@ -84,6 +89,10 @@ function BeamChannelBank({
 
 function BeamStatusScreen({ simulation, beam }) {
   const { startupSystems: systems } = simulation
+  const draftDiagnostics = calculateBeamDiagnostics(beam, {
+    energyA: simulation.beamEnergy,
+    energyB: simulation.beamEnergyB,
+  })
   const statusA = systems.beamAInjected ? 'INJECTED' : 'NOT INJECTED'
   const statusB = systems.beamBInjected ? 'INJECTED' : 'NOT INJECTED'
   const particleA = particleOptions.find((option) => option.value === beam.particleType)
@@ -97,6 +106,8 @@ function BeamStatusScreen({ simulation, beam }) {
         <span>CHANNEL B<strong>{statusB}</strong></span>
         <span>RAMP STATUS<strong>{systems.beamRampComplete ? 'AT TARGET' : systems.rfEnabled ? 'READY' : 'STANDBY'}</strong></span>
         <span>COLLISIONS<strong>{systems.collisionsActive ? 'ACTIVE · LOCAL' : 'OFF'}</strong></span>
+        <span>MODEL √S<strong>{formatEnergy(simulation.beamDiagnostics.centerOfMassEnergyGeV)}</strong></span>
+        <span>LUMINOSITY<strong>{simulation.beamDiagnostics.luminosityAvailable ? `${simulation.beamDiagnostics.luminosityCm2S.toExponential(2)} cm⁻²s⁻¹` : 'HEAD-ON PROTONS REQUIRED'}</strong></span>
       </div>
       <div className="beam-ring-visual">
         <svg viewBox="0 0 360 220" role="img" aria-label="Schematic of the two counter-circulating beam channels">
@@ -132,6 +143,11 @@ function BeamStatusScreen({ simulation, beam }) {
         <span>RF SYSTEM <i className={systems.rfEnabled ? 'on' : ''} /></span>
         <span>ENERGY RAMP <i className={systems.beamRampComplete ? 'on' : ''} /></span>
       </footer>
+      <div className="beam-field-setpoint">
+        <span>DIPOLE FIELD / REQUIRED {draftDiagnostics.dipoleFieldRequiredTesla.toFixed(4)} T</span>
+        <strong>{beam.dipoleFieldTesla.toFixed(4)} T <small>SIMULATED SETPOINT</small></strong>
+        <p>Field match {draftDiagnostics.fieldRatio.toFixed(3)}× · Relativistic rigidity: p [GeV/c] = 0.299792458 × B [T] × ρ [m], with ρ = {draftDiagnostics.assumptions.bendingRadiusM.toLocaleString()} m.</p>
+      </div>
     </section>
   )
 }
@@ -158,7 +174,11 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
 
     const channelKeys = channel === 'A'
       ? ['particleType', 'targetEnergy', 'intensity', 'particleCount', 'direction']
-      : ['particleTypeB', 'targetEnergyB', 'intensityB', 'particleCountB', 'directionB']
+      : channel === 'B'
+        ? ['particleTypeB', 'targetEnergyB', 'intensityB', 'particleCountB', 'directionB']
+        : channel === 'FIELD' ? ['dipoleFieldTesla']
+          : channel === 'QUAD' ? ['quadrupoleGradientTM']
+            : ['rfVoltageMV']
     const config = Object.fromEntries(channelKeys.map((key) => [key, draftBeam[key]]))
     const startedAt = performance.now()
     setActiveChannel(channel)
@@ -191,12 +211,19 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
 
       <div className="procedure-reference beam-control-reference">
         <strong>BEAM CHANNEL SETTINGS</strong>
-        <span>Configuration is available in standby or technical stop. Injection, RF, acceleration, and alignment remain interlocked in the Overview startup procedure.</span>
+        <span>Configuration is available in standby or technical stop. Beam energy is bounded by the dipole rigidity; quadrupole focusing, RF ramp response, and bunch parameters feed the modeled diagnostics. All controls are educational, not operational.</span>
       </div>
 
+      <section className="console-bank collision-source-bank" aria-label="Data-informed collision model">
+        <header><span><b>00.</b> FIXED DATA-INFORMED COLLISION MODEL</span><small>NO SOURCE MODE SWITCH</small></header>
+        <div className="collision-source-controls">
+          <p>Every simulated event is resampled from the recorded CMS J/ψ→μ⁺μ⁻ dataset and passed through the educational detector-response model. The recorded template is identified in Event Display. This selected sample supports dimuon-like resampling only; its measured momenta are not scaled or relabeled as events at the configured beam energy.</p>
+        </div>
+      </section>
+
       <div className="console-readout-strip" aria-label="Live beam channel readouts">
-        {readout('BEAM A ENERGY', `${simulation.beamEnergy.toFixed(2)} GeV`, simulation.startupSystems.beamAInjected)}
-        {readout('BEAM B ENERGY', `${simulation.beamEnergyB.toFixed(2)} GeV`, simulation.startupSystems.beamBInjected)}
+        {readout('BEAM A ENERGY', formatEnergy(simulation.beamEnergy), simulation.startupSystems.beamAInjected)}
+        {readout('BEAM B ENERGY', formatEnergy(simulation.beamEnergyB), simulation.startupSystems.beamBInjected)}
         {readout('BEAM A INTENSITY', `${simulation.beam.intensity}%`, simulation.startupSystems.beamAInjected)}
         {readout('BEAM B INTENSITY', `${simulation.beam.intensityB}%`, simulation.startupSystems.beamBInjected)}
         {readout('BEAM STABILITY', `${simulation.beamStability.toFixed(1)}%`, simulation.beamStability > 97)}
@@ -208,7 +235,7 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
           onApply={() => applyChannel('A')} controlsLocked={controlsLocked || activeChannel !== null}
           applying={activeChannel === 'A'} applyProgress={activeChannel === 'A' ? applyProgress : 0}
         />
-        <BeamStatusScreen simulation={simulation} beam={simulation.beam} />
+        <BeamStatusScreen simulation={simulation} beam={draftBeam} />
         <BeamChannelBank
           channel="B" beam={draftBeam} onChange={updateDraft}
           onApply={() => applyChannel('B')} controlsLocked={controlsLocked || activeChannel !== null}
@@ -232,10 +259,42 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
             <span>REVOLUTIONS B<strong>{simulation.revolutionsB.toFixed(2)}</strong></span>
             <span>DETECTOR ACTIVITY<strong>{Math.round(simulation.beamActivity * 100)}%</strong></span>
             <span>DETECTED PARTICLES<strong>{simulation.detectedParticles.toLocaleString()}</strong></span>
+            <span>NORMALIZED EMITTANCE<strong>{simulation.beamDiagnostics.normalizedEmittanceUm.toFixed(2)} μm</strong></span>
+            <span>ORBIT OFFSET<strong>{simulation.beamDiagnostics.orbitOffsetMm.toFixed(3)} mm</strong></span>
+            <span>ORBIT CORRECTION<strong>{simulation.beamDiagnostics.orbitCorrectionNeeded ? 'CHECK REQUIRED' : 'WITHIN MODEL BAND'}</strong></span>
+            <span>MODEL LUMINOSITY<strong>{simulation.beamDiagnostics.luminosityAvailable ? `${simulation.beamDiagnostics.luminosityCm2S.toExponential(2)} cm⁻²s⁻¹` : 'N/A FOR BEAM CONFIG'}</strong></span>
+            <span>BUNCH STRUCTURE<strong>{simulation.beamDiagnostics.bunchSpacingNs} ns / {simulation.beamDiagnostics.numberOfBunches.toLocaleString()} bunches</strong></span>
+            <span>BETA* / BEAM SIZE<strong>{simulation.beamDiagnostics.betaStarM.toFixed(3)} m / {(simulation.beamDiagnostics.beamSizeAM * 1000).toFixed(3)} mm</strong></span>
+            <span>BEAM DIVERGENCE A<strong>{(simulation.beamDiagnostics.beamDivergenceAMrad * 1000).toFixed(3)} mrad</strong></span>
+            <span>FIELD / RIGIDITY<strong>{simulation.beamDiagnostics.fieldLimited ? 'ENERGY LIMITED' : 'WITHIN SETPOINT'}</strong></span>
           </div>
         </section>
         <section className="console-bank beam-diagnostic-bank beam-speed-bank">
-          <header><span><b>06.</b> SIMULATION RATE</span><small>LOCAL MODEL</small></header>
+          <header><span><b>06.</b> MAGNET FIELD SETPOINT</span><small>{activeChannel === 'FIELD' ? 'LOADING' : controlsLocked ? 'INTERLOCKED' : '5 SEC MODEL'}</small></header>
+          <div className="beam-magnet-instrument">
+            <label>DIPOLE FIELD <output>{draftBeam.dipoleFieldTesla.toFixed(4)} T</output>
+              <input disabled={controlsLocked || activeChannel !== null} type="range" min="0.001" max="8.5" step="0.001" value={draftBeam.dipoleFieldTesla} onChange={(event) => updateDraft({ dipoleFieldTesla: Number(event.target.value) })} />
+            </label>
+            {activeChannel === 'FIELD' && <progress max="1" value={applyProgress} aria-label="Dipole field setting progress" />}
+            <button type="button" disabled={controlsLocked || activeChannel !== null} onClick={() => applyChannel('FIELD')}>
+              {activeChannel === 'FIELD' ? `SETTING FIELD · ${Math.round(applyProgress * 100)}%` : 'SET DIPOLE FIELD'}
+            </button>
+            <label>QUADRUPOLE GRADIENT <output>{draftBeam.quadrupoleGradientTM} T/m</output>
+              <input disabled={controlsLocked || activeChannel !== null} type="range" min="20" max="250" step="5" value={draftBeam.quadrupoleGradientTM} onChange={(event) => updateDraft({ quadrupoleGradientTM: Number(event.target.value) })} />
+            </label>
+            {activeChannel === 'QUAD' && <progress max="1" value={applyProgress} aria-label="Quadrupole gradient setting progress" />}
+            <button type="button" disabled={controlsLocked || activeChannel !== null} onClick={() => applyChannel('QUAD')}>
+              {activeChannel === 'QUAD' ? `SETTING QUADRUPOLES · ${Math.round(applyProgress * 100)}%` : 'SET QUADRUPOLE CIRCUIT'}
+            </button>
+            <label>RF CAVITY VOLTAGE <output>{draftBeam.rfVoltageMV.toFixed(1)} MV</output>
+              <input disabled={controlsLocked || activeChannel !== null} type="range" min="1" max="32" step="0.5" value={draftBeam.rfVoltageMV} onChange={(event) => updateDraft({ rfVoltageMV: Number(event.target.value) })} />
+            </label>
+            {activeChannel === 'RF' && <progress max="1" value={applyProgress} aria-label="RF cavity voltage setting progress" />}
+            <button type="button" disabled={controlsLocked || activeChannel !== null} onClick={() => applyChannel('RF')}>
+              {activeChannel === 'RF' ? `SETTING RF · ${Math.round(applyProgress * 100)}%` : 'SET RF CIRCUIT'}
+            </button>
+          </div>
+          <header className="beam-rate-header"><span><b>07.</b> SIMULATION RATE</span><small>LOCAL MODEL</small></header>
           <div className="beam-speed-control">
             <span>MODEL SPEED</span>
             <div>{speeds.map((speed) => <button className={simulation.speed === speed ? 'active' : ''} onClick={() => onSpeed(speed)} key={speed}>{speed}×</button>)}</div>

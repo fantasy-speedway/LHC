@@ -9,8 +9,9 @@ function formatDirection(direction) {
 
 function getEventDuration(event) {
   if (!event) return 0
-  if (event.dataOrigin === 'CERN Open Data') return 2.6
-  return Math.min(2.6, Math.max(.8, Math.max(...event.particles.map((particle) => particle.lifetime)) * .52))
+  if (event.dataOrigin === 'CERN Open Data' || event.eventMode === 'DATA_INFORMED_SIMULATION') return 2.6
+  const lifetimes = event.particles.map((particle) => particle.lifetime).filter(Number.isFinite)
+  return Math.min(2.6, Math.max(.8, Math.max(...lifetimes, 0) * .52))
 }
 
 export default function CollisionView({ simulation }) {
@@ -29,6 +30,7 @@ export default function CollisionView({ simulation }) {
   const neutralParticles = event ? event.particles.length - chargedParticles : 0
   const eventIndex = event ? simulation.eventHistory.findIndex((item) => item.id === event.id) : -1
   const isCernEvent = event?.dataOrigin === 'CERN Open Data'
+  const isDataInformedEvent = event?.eventMode === 'DATA_INFORMED_SIMULATION'
 
   const loadEvent = (id) => {
     setEventId(id)
@@ -125,7 +127,7 @@ export default function CollisionView({ simulation }) {
         </div>
         <aside className="collision-info-column">
           <section className="collision-info-panel">
-            <div className="section-heading">EVENT INFORMATION <span>{isCernEvent ? 'CERN DATA REFERENCE' : event ? 'SIMULATED' : 'STANDBY'}</span></div>
+            <div className="section-heading">EVENT INFORMATION <span>{isCernEvent ? 'CERN DATA REFERENCE' : isDataInformedEvent ? 'DATA-INFORMED SIMULATION' : event ? 'SIMULATED' : 'STANDBY'}</span></div>
             {isCernEvent ? (
               <div className="collision-info-grid">
                 <span>CMS RUN<strong>{event.sourceRun}</strong></span>
@@ -138,6 +140,11 @@ export default function CollisionView({ simulation }) {
             ) : (
               <div className="collision-info-grid">
                 <span>EVENT ID<strong>{event?.label ?? '—'}</strong></span>
+                {isDataInformedEvent && <>
+                  <span>CMS TEMPLATE<strong>{`RUN ${event.templateSource.runNumber} / EVENT ${event.templateSource.eventNumber}`}</strong></span>
+                  <span>TEMPLATE MASS<strong>{`${event.templateInvariantMassGeV.toFixed(3)} GeV`}</strong></span>
+                  <span>MODELED √s<strong>{event.centerOfMassEnergyGeV == null ? '—' : `${event.centerOfMassEnergyGeV.toFixed(2)} GeV`}</strong></span>
+                </>}
                 <span>SIMULATION TIME<strong>{event ? `${event.time.toFixed(3)} ns` : '—'}</strong></span>
                 <span>PARTICLES PRODUCED<strong>{event?.particles.length ?? 0}</strong></span>
                 <span>CHARGED PARTICLES<strong>{chargedParticles}</strong></span>
@@ -163,7 +170,7 @@ export default function CollisionView({ simulation }) {
                     <dt>PSEUDORAPIDITY</dt><dd>{selectedParticle.pseudorapidity.toFixed(5)}</dd>
                     <dt>CMS TRACK TYPE</dt><dd>{selectedParticle.muonTrackType}</dd>
                   </> : <>
-                    <dt>LIFETIME</dt><dd>{selectedParticle.lifetime.toFixed(2)} ns</dd>
+                    <dt>LIFETIME</dt><dd>{Number.isFinite(selectedParticle.lifetime) ? `${selectedParticle.lifetime.toFixed(2)} ns` : 'Not available in the recorded template'}</dd>
                   </>}
                 </dl>
               </>
@@ -182,10 +189,10 @@ export default function CollisionView({ simulation }) {
             <span>{particle.energy.toFixed(3)} GeV</span>
             <span>{particle.charge > 0 ? `+${particle.charge}` : particle.charge}</span>
             <span>{formatDirection(particle.direction)}</span>
-            <span>{isCernEvent ? particle.muonTrackType : `${particle.lifetime.toFixed(2)} ns`}</span>
-            <strong>{isCernEvent ? 'RECORDED' : 'DETECTED'}</strong>
+            <span>{isCernEvent || isDataInformedEvent ? particle.muonTrackType : Number.isFinite(particle.lifetime) ? `${particle.lifetime.toFixed(2)} ns` : '—'}</span>
+            <strong>{isCernEvent ? 'RECORDED' : isDataInformedEvent ? 'SIMULATED RECO' : 'DETECTED'}</strong>
           </button>
-        )) : <div className="particle-table-empty">Start the collider to load a recorded CMS reference event.</div>}
+        )) : <div className="particle-table-empty">Start collisions to create a data-informed event from the recorded CMS dimuon sample.</div>}
       </section>
       <section className="collision-history-panel">
         <div className="section-heading">RECENT EVENTS <span>{simulation.eventHistory.length} RETAINED</span></div>

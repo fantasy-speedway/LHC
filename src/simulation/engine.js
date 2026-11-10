@@ -3,6 +3,8 @@ import { createCollisionEvent } from '../collision/engine'
 import { environmentDefaults } from '../environment/systems'
 import { createStartupSystems, startupProcedure } from './startup-procedure'
 import { chooseRunningIncident, chooseStartupFailure, createIncident } from './incidents'
+import { calculateBeamDiagnostics } from '../physics/beam-physics'
+import { simulateDetectorResponse } from '../detector/response'
 
 const defaultBeam = {
   particleType: 'proton',
@@ -11,13 +13,23 @@ const defaultBeam = {
   initialEnergyB: 4,
   targetEnergy: 12,
   targetEnergyB: 12,
+  dipoleFieldTesla: 0.0143,
   intensity: 68,
   intensityB: 68,
   direction: 'clockwise',
   directionB: 'counterClockwise',
   particleCount: 256,
   particleCountB: 256,
+  quadrupoleGradientTM: 200,
+  rfVoltageMV: 16,
+  normalizedEmittanceUm: 2.5,
+  bunchSpacingNs: 25,
+  numberOfBunches: 2808,
 }
+const initialBeamDiagnostics = calculateBeamDiagnostics(defaultBeam, {
+  energyA: defaultBeam.initialEnergy,
+  energyB: defaultBeam.initialEnergyB,
+})
 
 function startupCheckStatus(systems) {
   const statuses = {
@@ -40,7 +52,7 @@ const initialState = {
   events: 12847,
   fps: 60,
   experimentId: 'EXP-26-0907-A',
-  message: 'Simulation ready. Start the individual power, cryogenic, vacuum, and beam-system controls when you are ready.',
+  message: 'Data-informed simulation ready. Events will be resampled from the recorded CERN CMS dimuon reference dataset.',
   checks: checkNames.map((name) => ({ name, status: 'NOT CHECKED' })),
   startupProcedureStep: 0,
   completedProcedureSteps: [],
@@ -52,9 +64,10 @@ const initialState = {
   startupAttemptFailureChosen: false,
   incident: null,
   beamActivity: 0,
-  beamStability: 98.8,
-  beamEnergy: defaultBeam.initialEnergy,
-  beamEnergyB: defaultBeam.initialEnergyB,
+  beamStability: initialBeamDiagnostics.stabilityPercent,
+  beamEnergy: initialBeamDiagnostics.beamA.energyGeV,
+  beamEnergyB: initialBeamDiagnostics.beamB.energyGeV,
+  beamDiagnostics: initialBeamDiagnostics,
   revolutions: 0,
   revolutionsB: 0,
   energyHistory: [{ time: 0, energy: defaultBeam.initialEnergy }],
@@ -100,10 +113,23 @@ export function createSimulationEngine() {
     procedureInterval = null
   }
   const setBeamEnergies = (energyA, energyB) => ({
-    beamEnergy: energyA,
-    beamEnergyB: energyB,
-    energyHistory: [...state.energyHistory, { time: state.time, energy: energyA }].slice(-48),
-    energyHistoryB: [...state.energyHistoryB, { time: state.time, energy: energyB }].slice(-48),
+    ...(() => {
+      const beamDiagnostics = calculateBeamDiagnostics(state.beam, {
+        energyA,
+        energyB,
+        timeSeconds: performance.now() / 1000,
+      })
+      const beamEnergy = beamDiagnostics.beamA.energyGeV
+      const beamEnergyB = beamDiagnostics.beamB.energyGeV
+      return {
+        beamEnergy,
+        beamEnergyB,
+        beamStability: beamDiagnostics.stabilityPercent,
+        beamDiagnostics,
+        energyHistory: [...state.energyHistory, { time: state.time, energy: beamEnergy }].slice(-48),
+        energyHistoryB: [...state.energyHistoryB, { time: state.time, energy: beamEnergyB }].slice(-48),
+      }
+    })(),
   })
   const recordIncident = (outcome, options = {}) => {
     const incident = {
@@ -166,6 +192,13 @@ export function createSimulationEngine() {
     if (!state.lastTimestamp) state.lastTimestamp = timestamp
     const elapsed = Math.min(timestamp - state.lastTimestamp, 100)
     const nextTime = state.time + elapsed * 0.0008 * state.speed
+    const beamDiagnostics = calculateBeamDiagnostics(state.beam, {
+      energyA: state.beamEnergy,
+      energyB: state.beamEnergyB,
+      timeSeconds: timestamp / 1000,
+    })
+    const beamEnergy = beamDiagnostics.beamA.energyGeV
+    const beamEnergyB = beamDiagnostics.beamB.energyGeV
     const environment = {
       ...state.environment,
       cooling: {
@@ -178,10 +211,10 @@ export function createSimulationEngine() {
     }
     historyClock += elapsed
     const energyHistory = historyClock > 140
-      ? [...state.energyHistory, { time: nextTime, energy: state.beam.targetEnergy }].slice(-48)
+      ? [...state.energyHistory, { time: nextTime, energy: beamEnergy }].slice(-48)
       : state.energyHistory
     const energyHistoryB = historyClock > 140
-      ? [...state.energyHistoryB, { time: nextTime, energy: state.beam.targetEnergyB }].slice(-48)
+      ? [...state.energyHistoryB, { time: nextTime, energy: beamEnergyB }].slice(-48)
       : state.energyHistoryB
     if (historyClock > 140) historyClock = 0
 
@@ -192,9 +225,10 @@ export function createSimulationEngine() {
       events: state.events + (['COLLISIONS', 'STANDALONE_RUN'].includes(state.operationPhase) ? Math.floor(elapsed * state.speed * 0.04) : 0),
       fps: Math.round(1000 / Math.max(elapsed, 16)),
       beamActivity: Math.min(1, state.beamActivity + elapsed * 0.001),
-      beamStability: Math.max(92, Math.min(99.8, 98.8 - Math.sin(nextTime * 1.7) * 1.2)),
-      beamEnergy: state.beam.targetEnergy,
-      beamEnergyB: state.beam.targetEnergyB,
+      beamStability: beamDiagnostics.stabilityPercent,
+      beamEnergy,
+      beamEnergyB,
+      beamDiagnostics,
       revolutions: state.revolutions + elapsed * 0.00014 * state.speed,
       revolutionsB: state.revolutionsB + elapsed * 0.00014 * state.speed,
       energyHistory,
@@ -219,26 +253,40 @@ export function createSimulationEngine() {
       const collision = createCollisionEvent({
         eventNumber: state.collisions + 1,
         time: nextTime,
-        beamEnergy: state.beam.targetEnergy,
-        particleType: state.beam.particleType,
-        detectorEfficiency: environment.detector.efficiency - state.faults.filter((fault) =>
-          fault.system === 'Detector' && ['ACTIVE', 'RECOVERING'].includes(fault.status)).length * 8,
+        beamDiagnostics,
+        beam: state.beam,
       })
-      const eventHistory = [...state.eventHistory, collision].slice(-18)
+      const activeDetectorFaults = state.faults.filter((fault) =>
+        fault.system === 'Detector' && ['ACTIVE', 'RECOVERING'].includes(fault.status)).length
+      const detectorEfficiency = Math.max(0, environment.detector.efficiency - activeDetectorFaults * 8) / 100
+      const collisionWithContext = simulateDetectorResponse(collision, {
+        detectorEfficiency,
+        magneticFieldTesla: 3.8,
+        seed: collision.id,
+      })
+      const eventHistory = [...state.eventHistory, collisionWithContext].slice(-18)
       const collisions = state.collisions + 1
       nextState = {
         ...nextState,
         collisions,
-        detectedParticles: state.detectedParticles + collision.detectedParticles,
-        averageEventEnergy: ((state.averageEventEnergy * state.collisions) + collision.totalEnergy) / collisions,
+        detectedParticles: state.detectedParticles + collisionWithContext.detectedParticles,
+        averageEventEnergy: ((state.averageEventEnergy * state.collisions) + collisionWithContext.totalEnergy) / collisions,
         collisionRate: collisions / Math.max(nextTime, 0.1),
         eventHistory,
-        latestCollision: collision,
+        latestCollision: collisionWithContext,
         collisionFlash: 1,
-        nextCollisionTime: endFillAtNextEvent ? state.nextCollisionTime : nextTime + 1.25 + Math.random() * 1.5,
+        nextCollisionTime: endFillAtNextEvent
+          ? state.nextCollisionTime
+          : nextTime + (1.25 + Math.random() * 1.5) / Math.max(0.1,
+            Math.min(3, Math.sqrt(Math.max(0.001,
+              (beamDiagnostics.luminosityCm2S ?? 0)
+              / Math.max(initialBeamDiagnostics.luminosityCm2S ?? 1, 1),
+            )))
+            * (beamDiagnostics.stabilityPercent / 99.4)
+            * (environment.vacuum.quality / 100)),
         message: endFillAtNextEvent
           ? 'End-of-fill request reached an event boundary. Collisions have stopped; beams remain in stable circulation.'
-          : `${collision.label} loaded from CERN reference data. Detector display updated.`,
+          : `${collision.label} resampled from CERN CMS data and passed through the educational detector-response model.`,
       }
 
       if (endFillAtNextEvent) {
@@ -311,6 +359,9 @@ export function createSimulationEngine() {
             startupProcedure.findIndex((procedureStep) => procedureStep.id === id) < stepIndex)
           const beamRampWasReset = startupProcedure.slice(stepIndex).some((dependentStep) => dependentStep.id === 'beam-ramp')
           const isStandby = stepIndex === 0 && !startupSystems.gridPower
+          const resetBeamEnergies = beamRampWasReset
+            ? setBeamEnergies(state.beam.initialEnergy, state.beam.initialEnergyB)
+            : {}
           setState({
             status: isStandby ? 'READY' : 'START-UP IN PROGRESS',
             operationPhase: isStandby ? 'STANDBY' : 'STARTUP_PROCEDURE',
@@ -325,10 +376,7 @@ export function createSimulationEngine() {
             checks: startupCheckStatus(startupSystems),
             beamStatus: startupSystems.beamBInjected ? 'INJECTED' : startupSystems.beamAInjected ? 'INJECTED' : 'OFF',
             magnetStatus: startupSystems.magnetPowerEnabled ? 'POWERED / STABLE' : 'STANDBY',
-            ...(beamRampWasReset ? {
-              beamEnergy: state.beam.initialEnergy,
-              beamEnergyB: state.beam.initialEnergyB,
-            } : {}),
+            ...resetBeamEnergies,
             message: isStandby
               ? 'All simulated startup controls are off. The collider model is in standby.'
               : `${step.label} is off. Dependent procedure controls have been reset and must be completed again.`,
@@ -448,8 +496,12 @@ export function createSimulationEngine() {
       const nextStep = startupProcedure[nextStepIndex]
       const isStartingCollisions = step.id === 'start-collisions'
       const nextCompletedSteps = [...completedSteps, step.id]
+      const rfAccelerationFraction = Math.max(0, Math.min(1, state.beam.rfVoltageMV / 16))
       const beamUpdates = step.id === 'beam-ramp'
-        ? setBeamEnergies(state.beam.targetEnergy, state.beam.targetEnergyB)
+        ? setBeamEnergies(
+          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * rfAccelerationFraction,
+          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * rfAccelerationFraction,
+        )
         : {}
 
       if (isStartingCollisions) {
@@ -513,10 +565,11 @@ export function createSimulationEngine() {
         progressSystems.quadrupoleProgress = progress * 100
       } else if (step.id === 'beam-ramp') {
         progressSystems.beamRampProgress = progress * 100
-        setState({
-          beamEnergy: state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * progress,
-          beamEnergyB: state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * progress,
-        })
+        const accelerationProgress = Math.max(0, Math.min(1, progress * state.beam.rfVoltageMV / 16))
+        setState(setBeamEnergies(
+          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * accelerationProgress,
+          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * accelerationProgress,
+        ))
       }
       setState({
         startupProgress: progress,
@@ -790,12 +843,19 @@ export function createSimulationEngine() {
     setBeamConfig: (updates) => {
       if (!['STANDBY', 'TECHNICAL_STOP'].includes(state.operationPhase) && state.status !== 'PAUSED') return
       const beam = { ...state.beam, ...updates }
+      const diagnostics = calculateBeamDiagnostics(beam, {
+        energyA: beam.initialEnergy,
+        energyB: beam.initialEnergyB,
+        timeSeconds: performance.now() / 1000,
+      })
       setState({
         beam,
-        beamEnergy: beam.initialEnergy,
-        beamEnergyB: beam.initialEnergyB,
-        energyHistory: [{ time: state.time, energy: beam.initialEnergy }],
-        energyHistoryB: [{ time: state.time, energy: beam.initialEnergyB }],
+        beamEnergy: diagnostics.beamA.energyGeV,
+        beamEnergyB: diagnostics.beamB.energyGeV,
+        beamStability: diagnostics.stabilityPercent,
+        beamDiagnostics: diagnostics,
+        energyHistory: [{ time: state.time, energy: diagnostics.beamA.energyGeV }],
+        energyHistoryB: [{ time: state.time, energy: diagnostics.beamB.energyGeV }],
       })
     },
   }

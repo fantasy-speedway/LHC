@@ -1,3 +1,42 @@
 .data-page { flex: 1; min-height: 0; overflow-y: auto; padding-right: 3px; }.data-header { display: flex; justify-content: space-between; align-items: end; margin-bottom: 14px; }.data-header h3 { margin: 4px 0 2px; color: #edf5f2; font: 600 25px 'Barlow Condensed', sans-serif; }.data-header p { color: var(--muted); font-size: 9px; margin: 0; }.data-refresh, .data-save { border: 1px solid #315057; color: var(--cyan); background: transparent; padding: 8px; font-size: 8px; }.data-section { border: 1px solid var(--line); background: #0b171c; margin-bottom: 12px; padding: 13px; }.data-section-header { display: flex; justify-content: space-between; align-items: end; margin-bottom: 11px; }.data-section-header h4, .data-export h4 { margin: 4px 0 0; color: #edf5f2; font: 500 18px 'Barlow Condensed', sans-serif; }.data-section-header input, .data-section-header select, .data-tools input, .data-tools select { border: 1px solid #29454b; background: #091419; color: var(--ink); padding: 7px; font-size: 8px; }.data-tools { display: flex; gap: 5px; }.data-tools button { border: 1px solid #29454b; background: transparent; color: var(--ink); padding: 6px 9px; }.data-table { overflow-x: auto; }.data-row { display: grid; grid-template-columns: 1.25fr 1.15fr .85fr .8fr .8fr .8fr .8fr 1fr; align-items: center; gap: 8px; width: 100%; min-width: 720px; border-top: 1px solid rgba(33,53,59,.7); padding: 8px 5px; color: var(--muted); text-align: left; font-size: 8px; }.data-row.data-head { border-top: 0; color: var(--muted); font-size: 7px; letter-spacing: .7px; }.data-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.data-row span:first-child, .data-row b { color: var(--ink); }.data-row button { border: 1px solid #315057; background: transparent; color: var(--cyan); padding: 5px; font-size: 7px; margin-right: 4px; }.data-row button.danger, .note-row button { color: var(--amber); border-color: #745c36; }.data-button { border-left: 0; border-right: 0; border-bottom: 0; cursor: pointer; background: transparent; }.data-button:hover { background: #12242a; }.data-empty { color: var(--muted); font-size: 8px; padding: 14px 5px; }.notebook-section { padding-bottom: 16px; }.note-form { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }.note-form input, .note-form textarea { border: 1px solid #29454b; background: #091419; color: var(--ink); padding: 8px; font: 8px 'IBM Plex Mono'; }.note-form textarea:last-child { grid-column: 1 / -1; }.note-form textarea { min-height: 52px; resize: vertical; }.note-row { display: grid; grid-template-columns: 1fr 3fr auto; gap: 10px; align-items: start; border-top: 1px solid rgba(33,53,59,.7); margin-top: 12px; padding-top: 10px; }.note-row b, .note-row span, .note-row p { display: block; }.note-row b { color: var(--ink); font-size: 9px; }.note-row span { color: var(--muted); font-size: 7px; margin-top: 4px; }.note-row p { color: var(--muted); font-size: 8px; line-height: 1.5; margin: 0; }.note-row p strong { color: var(--cyan); font-size: 7px; }.note-row button { border: 1px solid #745c36; background: transparent; padding: 5px; font-size: 7px; }.data-export { display: flex; justify-content: space-between; align-items: end; border: 1px solid var(--line); background: #0b171c; padding: 13px; }.data-export > div:last-child { display: flex; flex-wrap: wrap; gap: 5px; justify-content: end; }.data-export button { border: 1px solid #315057; color: var(--cyan); background: transparent; padding: 8px; font-size: 8px; }.data-export button:hover { background: #12242a; }
 .archive-note { color: var(--muted); font-size: 8px; line-height: 1.55; margin: -4px 0 10px; }
 .archive-error { border: 1px solid #6b3b38; background: #241515; padding: 8px; }
+.research-status { color: var(--cyan); font-size: 8px; line-height: 1.5; }
+.note-form select { min-width: 0; border: 1px solid #29454b; background: #091419; color: var(--ink); padding: 8px; font: 8px 'IBM Plex Mono'; }
+.research-history > .data-section-header { margin-bottom: 12px; }
+.research-datasets { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 7px; }
+.research-datasets > div { display: grid; gap: 5px; min-width: 0; border: 1px solid var(--line); background: #091419; padding: 9px; }
+.research-datasets span, .research-datasets small { color: var(--muted); font-size: 7px; }
+.research-datasets strong { color: var(--ink); font-size: 8px; line-height: 1.4; }
+.research-datasets small { overflow-wrap: anywhere; }
+.research-timeline { display: grid; gap: 0; margin-top: 12px; }
+.research-timeline article { display: grid; grid-template-columns: minmax(105px, .7fr) minmax(90px, .5fr) minmax(0, 1.4fr); gap: 6px 10px; align-items: baseline; border-top: 1px solid rgba(33,53,59,.7); padding: 9px 5px; font-size: 8px; }
+.research-timeline time, .research-timeline article > span, .research-timeline small { color: var(--muted); font-size: 7px; }
+.research-timeline article > span { color: var(--cyan); }
+.research-timeline article > strong { color: var(--ink); font-weight: 500; }
+.research-timeline small { grid-column: 3; overflow-wrap: anywhere; }
+.research-import { display: grid; gap: 5px; border: 1px solid #315057; color: var(--cyan); background: transparent; padding: 8px; font-size: 8px; }
+.research-import input { max-width: 230px; color: var(--muted); font-size: 8px; }
+.data-export p { color: var(--muted); font-size: 8px; line-height: 1.5; }
+
+.research-project-create { display: flex; gap: 7px; margin-bottom: 8px; }
+.research-project-create input, .research-collections input { min-width: 0; border: 1px solid #29454b; background: #091419; color: var(--ink); padding: 8px; font: 8px 'IBM Plex Mono'; }
+.research-project-create button, .research-collections > button { border: 1px solid #315057; background: transparent; color: var(--cyan); padding: 8px; font-size: 8px; }
+.research-collections { display: flex; flex-wrap: wrap; align-items: end; gap: 7px; margin-bottom: 12px; }
+.research-collections label { display: grid; gap: 5px; min-width: 180px; color: var(--muted); font-size: 7px; }
+.research-collections article { display: grid; gap: 5px; width: 100%; padding: 9px; border: 1px solid var(--line); background: #091419; }
+.research-collections article strong, .research-reports article strong { color: var(--ink); font-size: 8px; }
+.research-collections article > span, .research-collections article div, .research-collections > p, .research-reports article span, .research-reports article small, .research-reports > p { color: var(--muted); font-size: 7px; line-height: 1.5; }
+.research-collections article div { display: flex; flex-wrap: wrap; gap: 5px; }
+.research-collections article div span { border: 1px solid var(--line); padding: 4px 6px; overflow-wrap: anywhere; }
+.research-reports { display: grid; gap: 7px; margin: 12px 0; }
+.research-reports h5 { margin: 0; color: var(--ink); font: 500 15px 'Barlow Condensed', sans-serif; }
+.research-reports article { display: grid; gap: 4px; padding: 9px; border: 1px solid var(--line); background: #091419; }
+.research-reports article small { overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  .data-section-header { align-items: stretch; flex-direction: column; gap: 8px; }
+  .data-tools, .research-project-create { flex-wrap: wrap; }
+  .data-tools > *, .research-project-create input { flex: 1 1 140px; }
+  .research-collections label { flex: 1 1 100%; }
+  .research-collections > button { flex: 1 1 100%; }
+}

@@ -27,6 +27,63 @@ const detectorSystems = {
   },
 }
 
+function DetectorGeometry({ event }) {
+  const layers = [
+    { id: 'tracking', label: 'PIXEL + STRIP TRACKER', radius: 32, color: '#59d7cd' },
+    { id: 'electromagnetic', label: 'ECAL / CRYSTALS', radius: 54, color: '#f0b36d' },
+    { id: 'hadronic', label: 'HCAL / SAMPLING', radius: 72, color: '#d58cff' },
+    { id: 'muon', label: 'MUON CHAMBERS', radius: 98, color: '#8fb8ff' },
+  ]
+  const particles = (event?.particles ?? []).filter((particle) => particle.charge !== 0 || ['Photon', 'Jet'].includes(particle.type))
+  const cells = event?.detectorResponse?.cells ?? []
+  const magneticField = event?.detectorResponse?.magneticFieldTesla ?? 3.8
+
+  return (
+    <section className="detector-geometry-panel">
+      <header><span className="section-kicker">DETECTOR GEOMETRY / EVENT RESPONSE</span><strong>BARREL + ENDCAP CROSS-SECTION</strong></header>
+      <div className="detector-geometry-scroll">
+        <svg viewBox="0 0 800 260" role="img" aria-label="Schematic CMS barrel and endcap detector geometry with event tracks and calorimeter cells">
+          <path d="M190 130H610" className="detector-geometry-beamline" />
+          {layers.map((layer) => (
+            <g key={layer.id} className="detector-geometry-layer">
+              <path d={`M225 ${130 - layer.radius}H575 C600 ${130 - layer.radius} 600 ${130 + layer.radius} 575 ${130 + layer.radius}H225 C200 ${130 + layer.radius} 200 ${130 - layer.radius} 225 ${130 - layer.radius}Z`} stroke={layer.color} />
+              <ellipse cx="225" cy="130" rx="14" ry={layer.radius} stroke={layer.color} />
+              <ellipse cx="575" cy="130" rx="14" ry={layer.radius} stroke={layer.color} />
+              <text x="620" y={134 - layer.radius} fill={layer.color}>{layer.label}</text>
+            </g>
+          ))}
+          <text x="360" y="24" className="detector-geometry-label">CMS-INSPIRED BARREL</text>
+          <text x="204" y="246" className="detector-geometry-label">ENDCAP</text>
+          <text x="548" y="246" className="detector-geometry-label">ENDCAP</text>
+          <circle cx="400" cy="130" r="3" className="detector-geometry-vertex" />
+          {particles.map((particle, index) => {
+            const pt = Math.max(particle.transverseMomentum ?? 0.1, 0.1)
+            const bend = particle.charge
+              ? Math.sign(particle.charge) * Math.min(0.9, 0.04 * magneticField / pt)
+              : 0
+            const phi = (particle.direction ?? 0) + bend
+            const endRadius = ['Photon', 'Jet'].includes(particle.type) ? 76 : 50
+            const endX = 400 + Math.cos(phi) * endRadius
+            const endY = 130 + Math.sin(phi) * endRadius
+            const controlX = 400 + Math.cos(phi + bend * 0.5) * endRadius * 0.56
+            const controlY = 130 + Math.sin(phi + bend * 0.5) * endRadius * 0.56
+            return <path key={particle.id ?? index} d={`M400 130 Q${controlX} ${controlY} ${endX} ${endY}`} className={`detector-event-track ${particle.type.toLowerCase()}`}><title>{`${particle.type} · pT ${particle.transverseMomentum?.toFixed(2) ?? '—'} GeV/c${particle.charge ? ` · charge ${particle.charge}` : ''}`}</title></path>
+          })}
+          {cells.map((cell) => {
+            const radius = cell.layerId === 'electromagnetic' ? 56 : 75
+            const x = 400 + Math.cos(cell.phi) * radius
+            const y = 130 + Math.sin(cell.phi) * radius
+            return <rect key={cell.id} x={x - 3} y={y - 3} width="6" height="6" className={`detector-energy-cell ${cell.layerId}`}><title>{`${cell.layerId} cell · ${cell.energyGeV.toFixed(2)} GeV`}</title></rect>
+          })}
+          <text x="20" y="232" className="detector-geometry-note">SOLENOID FIELD: {magneticField.toFixed(1)} T</text>
+          <text x="20" y="247" className="detector-geometry-note">SCHEMATIC / NOT TO SCALE</text>
+        </svg>
+      </div>
+      <p>Charged-track curvature and calorimeter-cell deposits are educational response-model outputs for data-informed simulations. The model starts from resampled recorded CMS dimuon reconstructions; it does not produce detector measurements or a full collision simulation.</p>
+    </section>
+  )
+}
+
 function layerMeasurement(component, response, event, selectedDetector) {
   if (!event) return { status: 'AWAITING EVENT', value: '—', detail: 'Select or generate an event to inspect response.' }
   if (component.id === 'magnets') {
@@ -118,6 +175,8 @@ export default function DetectorView({ simulation }) {
             <span>LAYERS WITH EVENT DATA<strong>{measurementsAvailable}</strong></span>
           </div>
         </div>
+
+        <DetectorGeometry event={event} />
 
         <div className="detector-component-list">
           {detector.components.map((component, index) => {

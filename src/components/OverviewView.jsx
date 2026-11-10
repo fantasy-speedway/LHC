@@ -4,7 +4,7 @@ import './overview-view.css'
 const shortcuts = [
   { view: 'Collider', eyebrow: 'ACCELERATOR MAP', title: 'Inspect the ring', description: 'Explore the LHC schematic, injector chain, and modeled subsystem status.', icon: '◉' },
   { view: 'Beam Control', eyebrow: 'BEAM CONFIGURATION', title: 'Configure beam channels', description: 'Compare Beam A and B settings, energy targets, and diagnostics.', icon: '⇄' },
-  { view: 'Event Display', eyebrow: 'EVENT REVIEW', title: 'Review a recorded event', description: 'Inspect measured CMS tracks, priority tags, and saved labels.', icon: '▦' },
+  { view: 'Event Display', eyebrow: 'EVENT REVIEW', title: 'Review a data-informed event', description: 'Inspect simulated tracks, their CMS source template, priority tags, and saved labels.', icon: '▦' },
   { view: 'Analysis', eyebrow: 'DATA ANALYSIS', title: 'Explore event summaries', description: 'Compare energy distributions, particles, and detector activity.', icon: '⌁' },
 ]
 
@@ -50,7 +50,7 @@ export default function OverviewView({ simulation, operations, onNavigate }) {
             <span>SIMULATION TIME<strong>{latestEvent.time.toFixed(3)} ns</strong></span>
           </div>
         ) : (
-          <p className="overview-empty">Complete the staged start-up sequence and enable collisions to begin the educational event replay.</p>
+          <p className="overview-empty">Complete the staged start-up sequence and enable collisions to begin the data-informed simulation.</p>
         )}
       </section>
 

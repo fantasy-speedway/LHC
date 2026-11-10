@@ -36,6 +36,26 @@
 .detector-measurement > small { grid-column: 1 / -1; color: var(--muted); font-size: 6px; line-height: 1.4; }
 .detector-data-note { border-left: 2px solid var(--amber); background: #111817; padding: 10px 12px; }
 .detector-data-note p { color: var(--muted); font-size: 8px; line-height: 1.5; margin: 5px 0 0; }
+.detector-geometry-panel { min-width: 0; border: 1px solid var(--line); background: #091419; padding: 11px; }
+.detector-geometry-panel > header { display: flex; justify-content: space-between; gap: 8px; color: var(--cyan); font-size: 7px; }
+.detector-geometry-panel > header strong { color: var(--muted); font-size: 7px; font-weight: 400; }
+.detector-geometry-scroll { overflow-x: auto; }
+.detector-geometry-scroll svg { display: block; width: 100%; min-width: 650px; height: auto; margin: 6px auto 0; }
+.detector-geometry-beamline { stroke: #60706e; stroke-dasharray: 4 5; stroke-width: 1; }
+.detector-geometry-layer path { fill: #10212755; stroke-width: 1.2; }
+.detector-geometry-layer ellipse { fill: #10212755; stroke-width: 1; stroke-dasharray: 3 3; }
+.detector-geometry-layer text { font: 7px 'IBM Plex Mono', monospace; }
+.detector-geometry-label, .detector-geometry-note { fill: var(--muted); font: 7px 'IBM Plex Mono', monospace; }
+.detector-geometry-note { fill: #91a5a3; }
+.detector-geometry-vertex { fill: #fff; stroke: var(--cyan); stroke-width: 2; }
+.detector-event-track { fill: none; stroke: #f0b36d; stroke-width: 1.3; opacity: .9; }
+.detector-event-track.muon { stroke: #e990c8; }
+.detector-event-track.electron { stroke: #8fb8ff; }
+.detector-event-track.photon { stroke: #ffd05e; stroke-dasharray: 3 2; }
+.detector-event-track.jet { stroke: #d58cff; stroke-width: 2; }
+.detector-energy-cell { stroke: #071217; stroke-width: .8; fill: #f0b36d; }
+.detector-energy-cell.hadronic { fill: #d58cff; }
+.detector-geometry-panel > p { color: var(--muted); font-size: 7px; line-height: 1.5; margin: 5px 0 0; }
 
 @media (max-width: 950px) {
   .detector-experiment-heading { flex-direction: column; }

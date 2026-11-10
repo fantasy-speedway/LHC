@@ -6,6 +6,10 @@ export const detectorLayers = [
 ]
 
 export function buildDetectorResponse(event) {
+  if (event?.eventMode === 'DATA_INFORMED_SIMULATION' && Array.isArray(event.detectorResponse?.layers)) {
+    return event.detectorResponse.layers
+  }
+
   if (event?.dataOrigin === 'CERN Open Data') {
     return detectorLayers.map((layer) => {
       const available = layer.id === 'tracking' || layer.id === 'muon'

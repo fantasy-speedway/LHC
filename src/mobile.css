@@ -1,0 +1,488 @@
+@media (max-width: 760px) {
+  .control-room {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .workspace,
+  .workspace.telemetry-hidden {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .simulation-view {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 14px 10px 10px;
+  }
+
+  .sidebar {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    max-height: 72px;
+    overflow: hidden;
+    border-top: 1px solid var(--line);
+    border-right: 0;
+    padding: 4px 0 env(safe-area-inset-bottom, 0);
+    z-index: 5;
+  }
+
+  .sidebar .side-label,
+  .sidebar-foot {
+    display: none;
+  }
+
+  .sidebar nav {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #29454b transparent;
+  }
+
+  .nav-item,
+  .sidebar .nav-item {
+    display: flex;
+    flex: 0 0 72px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 5px 3px;
+    font-size: 7px;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .nav-item.active,
+  .sidebar .nav-item.active {
+    border-bottom: 2px solid var(--cyan);
+    border-left: 0;
+    padding: 5px 3px 3px;
+  }
+
+  .nav-item .nav-icon {
+    width: auto;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .nav-item .nav-indicator {
+    display: none;
+  }
+
+  .telemetry-panel {
+    display: none;
+  }
+
+  .view-header {
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .view-header > div:first-child {
+    min-width: 0;
+  }
+
+  .view-header h2 {
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .view-actions {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .statusbar {
+    min-height: 38px;
+    gap: 6px 12px;
+    padding: 5px 9px;
+    font-size: 7px;
+    line-height: 1.35;
+  }
+
+  .statusbar span:nth-child(2),
+  .statusbar span:nth-child(3),
+  .statusbar .build {
+    display: none;
+  }
+
+  .statusbar > span:first-child {
+    flex: 0 0 auto;
+  }
+
+  .statusbar .system-message {
+    display: block;
+    flex: 1 1 180px;
+    min-width: 0;
+    margin-left: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .help-modal {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+
+  .help-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .experiment-layout,
+  .event-display-grid,
+  .collision-lab-grid,
+  .analysis-grid,
+  .discovery-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .event-inspector,
+  .collision-info-column {
+    min-width: 0;
+  }
+
+  .event-display-stage,
+  .event-display-stage .detector-canvas {
+    height: min(52vh, 360px);
+    min-height: 240px;
+  }
+
+  .collision-chamber,
+  .collision-chamber .detector-canvas {
+    height: min(52vh, 360px);
+    min-height: 240px;
+  }
+
+  .analysis-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .analysis-summary div {
+    min-width: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 8px;
+  }
+
+  .detector-analysis,
+  .interesting-analysis {
+    grid-column: auto;
+  }
+
+  .data-header,
+  .data-section-header,
+  .data-export,
+  .analysis-header,
+  .comparison-panel > .analysis-panel-header,
+  .event-display-toolbar,
+  .history-panel-header,
+  .collision-lab-header,
+  .analysis-event-detail {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .data-export > div:last-child {
+    justify-content: flex-start;
+  }
+
+  .data-section-header input,
+  .data-section-header select,
+  .data-tools input,
+  .data-tools select {
+    max-width: 100%;
+  }
+
+  .note-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .note-row p {
+    grid-column: 1 / -1;
+  }
+
+  .research-timeline article {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .research-timeline time,
+  .research-timeline article > span,
+  .research-timeline article > strong,
+  .research-timeline small {
+    grid-column: 1 / -1;
+  }
+
+  .data-export {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .data-export > div:last-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .research-import input {
+    max-width: 100%;
+  }
+
+  .detector-event-select {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .detector-event-select select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .collider-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .collider-inspector-column {
+    min-width: 0;
+  }
+
+  .collider-map {
+    height: min(54vh, 360px);
+    min-height: 260px;
+  }
+
+  .experiment-builder,
+  .event-display-view,
+  .collision-lab,
+  .analysis-page,
+  .data-page,
+  .detector-view,
+  .discovery-page,
+  .collider-page,
+  .beam-control-console {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  button,
+  select,
+  input:not([type='range']) {
+    max-width: 100%;
+  }
+
+  input[type='range'] {
+    min-height: 28px;
+    touch-action: pan-y;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    min-height: 58px;
+    padding: 0 10px;
+  }
+
+  .brand-lockup {
+    gap: 8px;
+  }
+
+  .topbar h1 {
+    max-width: 230px;
+    font-size: 15px;
+    line-height: 1.05;
+  }
+
+  .brand-subline {
+    font-size: 6px;
+  }
+
+  .simulation-view {
+    padding: 11px 8px 8px;
+  }
+
+  .view-header {
+    align-items: start;
+  }
+
+  .view-header h2 {
+    font-size: 18px;
+  }
+
+  .view-actions {
+    gap: 5px;
+  }
+
+  .incident-overlay {
+    align-items: end;
+    padding: 8px;
+  }
+
+  .incident-dialog {
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    padding: 17px;
+  }
+
+  .analysis-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-grid,
+  .comparison-grid,
+  .experiment-two-col,
+  .event-display-grid,
+  .collision-info-grid,
+  .detector-selector,
+  .detector-experiment-stats,
+  .detector-component-list,
+  .injector-guide-stages,
+  .beam-console-main-grid,
+  .beam-console-lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .beam-status-screen {
+    grid-column: 1;
+  }
+
+  .beam-control-console .console-readout-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .beam-control-console .beam-screen-metrics,
+  .beam-screen-readouts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .event-display-actions,
+  .collision-controls,
+  .data-tools,
+  .comparison-selects {
+    flex-wrap: wrap;
+  }
+
+  .priority-review-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .particle-table-head,
+  .particle-table-row,
+  .collision-history-row {
+    min-width: 560px;
+  }
+
+  .collision-particle-table,
+  .collision-history-panel {
+    overflow-x: auto;
+  }
+
+  .collider-live-strip,
+  .collider-control-deck,
+  .map-readouts {
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .collider-map {
+    height: 300px;
+    min-height: 260px;
+  }
+
+  .console-readout-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .console-main-grid,
+  .console-lower-banks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .console-ring-screen,
+  .console-side-bank.left,
+  .console-side-bank.right {
+    grid-column: 1;
+  }
+
+  .console-ring-screen {
+    grid-row: 1;
+  }
+
+  .console-lower-banks .startup-procedure-group {
+    min-height: 0;
+  }
+
+  .analysis-event-detail button,
+  .data-export button,
+  .event-display-actions button {
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 380px) {
+  .nav-item,
+  .sidebar .nav-item {
+    flex-basis: 64px;
+    font-size: 6px;
+  }
+
+  .topbar h1 {
+    max-width: 195px;
+    font-size: 14px;
+  }
+
+  .statusbar {
+    font-size: 6px;
+  }
+
+  .beam-control-console .console-readout-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .simulation-view p {
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .simulation-view label,
+  .simulation-view .section-kicker {
+    font-size: 9px;
+  }
+
+  .simulation-view input:not([type='range']),
+  .simulation-view select,
+  .simulation-view textarea {
+    max-width: 100%;
+    min-height: 40px;
+    font-size: 16px;
+  }
+
+  .simulation-view button:not(.nav-item) {
+    min-height: 36px;
+  }
+
+  .simulation-view input[type='checkbox'] {
+    min-width: 18px;
+    min-height: 18px;
+  }
+
+  .event-summary-card strong,
+  .data-row span,
+  .research-timeline strong,
+  .research-timeline small {
+    overflow-wrap: anywhere;
+  }
+}

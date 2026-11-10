@@ -1,12 +1,12 @@
 export const defaultExperiment = {
-  name: 'CMS Dimuon Reference Study', description: 'Replay recorded CMS J/ψ-to-dimuon events. Beam and detector settings only affect the educational simulation.', beamA: 'proton', beamB: 'proton', initialEnergy: 4, targetEnergy: 12, intensity: 68, collisionMode: 'Standard interaction', detector: 'Full', events: 10000, speed: 1,
+  name: 'CMS Dimuon Data-Informed Study', description: 'Resample measured CMS J/ψ-to-dimuon kinematics and apply the educational detector-response model.', beamA: 'proton', beamB: 'proton', initialEnergy: 4, targetEnergy: 12, intensity: 68, events: 10000, speed: 1,
 }
 
 export const experimentPresets = [
-  { name: 'Baseline CMS Replay', description: 'Replay recorded CMS dimuon events with the default simulated beam display.', beamA: 'proton', beamB: 'proton', initialEnergy: 4, targetEnergy: 12, intensity: 72, collisionMode: 'Standard interaction', detector: 'Full', events: 10000, speed: 1 },
-  { name: 'Energy Control Demo', description: 'Recorded CMS events stay unchanged; use this preset to explore the simulated energy controls.', beamA: 'electron', beamB: 'positron', initialEnergy: 2, targetEnergy: 8, intensity: 54, collisionMode: 'Electromagnetic focus', detector: 'Precision', events: 5000, speed: 1.25 },
-  { name: 'Muon Track Review', description: 'Review recorded CMS muon tracks with the local detector animation.', beamA: 'muon', beamB: 'muon', initialEnergy: 4, targetEnergy: 16, intensity: 66, collisionMode: 'Long-lived study', detector: 'Full', events: 7500, speed: 1 },
-  { name: 'Fast CMS Replay', description: 'Replay the same recorded dimuon sample more quickly; the energy scan is only a simulation.', beamA: 'proton', beamB: 'proton', initialEnergy: 8, targetEnergy: 24, intensity: 86, collisionMode: 'High variance', detector: 'Full', events: 15000, speed: 1.5 },
-  { name: 'Detector Display Demo', description: 'Explore the simulated detector display; the CMS CSV does not contain calorimeter hits.', beamA: 'electron', beamB: 'positron', initialEnergy: 2, targetEnergy: 6, intensity: 42, collisionMode: 'Calibration pulse', detector: 'Tracking only', events: 2500, speed: 2 },
-  { ...defaultExperiment, name: 'Custom CMS Replay', description: 'Configure local animation and run controls while replaying recorded CMS dimuon events.' },
+  { name: 'Baseline Data-Informed Run', description: 'Resample the CMS dimuon reference with the baseline educational beam configuration.', beamA: 'proton', beamB: 'proton', initialEnergy: 4, targetEnergy: 12, intensity: 72, events: 10000, speed: 1 },
+  { name: 'Energy Diagnostics Demo', description: 'Explore simulated beam-energy diagnostics; the recorded template momenta are not energy-scaled.', beamA: 'electron', beamB: 'positron', initialEnergy: 2, targetEnergy: 8, intensity: 54, events: 5000, speed: 1.25 },
+  { name: 'Muon Track Study', description: 'Inspect resampled CMS muon kinematics after the local detector response.', beamA: 'muon', beamB: 'muon', initialEnergy: 4, targetEnergy: 16, intensity: 66, events: 7500, speed: 1 },
+  { name: 'Fast Data-Informed Run', description: 'Run the same empirical dimuon model more quickly; the beam-energy scan is only a simulation.', beamA: 'proton', beamB: 'proton', initialEnergy: 8, targetEnergy: 24, intensity: 86, events: 15000, speed: 1.5 },
+  { name: 'Detector Display Demo', description: 'Explore the simplified detector response; the CMS CSV has no calorimeter-cell measurements.', beamA: 'electron', beamB: 'positron', initialEnergy: 2, targetEnergy: 6, intensity: 42, events: 2500, speed: 2 },
+  { ...defaultExperiment, name: 'Custom Data-Informed Run', description: 'Configure local run controls using resampled recorded CMS dimuon events.' },
 ]

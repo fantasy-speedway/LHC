@@ -13,15 +13,168 @@ export default function ExperimentBuilder({ engine }) {
   const [form, setForm] = useState(defaultExperiment)
   const [run, setRun] = useState(runner.snapshot())
   const [savedRuns] = useState(loadCompletedExperiments)
+
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+
   useEffect(() => runner.subscribe(setRun), [runner])
-  useEffect(() => { if (run.phase === 'COMPLETED' && run.startedAt) { const completed = { ...form, id: `${run.startedAt}-${form.name}`, completedAt: new Date().toISOString(), stats: { processed: run.processed, collisions: run.collisions, detected: run.detected, averageEnergy: run.averageEnergy }, events: run.eventHistory }; saveCompletedExperiment(completed) } }, [form, run])
+  useEffect(() => {
+    if (run.phase !== 'COMPLETED' || !run.startedAt) return
+    saveCompletedExperiment({
+      ...form,
+      id: `${run.startedAt}-${form.name}`,
+      completedAt: new Date().toISOString(),
+      stats: {
+        processed: run.processed,
+        collisions: run.collisions,
+        detected: run.detected,
+        averageEnergy: run.averageEnergy,
+      },
+      events: run.eventHistory,
+    })
+  }, [form, run])
+
   const selectPreset = (preset) => setForm({ ...preset })
   const start = () => runner.start(form)
   const openSaved = (saved) => setForm({ ...defaultExperiment, ...saved })
-  const options = particleOptions.map((particle) => <option value={particle.value} key={particle.value}>{particle.label} / {particle.symbol}</option>)
+  const options = particleOptions.map((particle) => (
+    <option value={particle.value} key={particle.value}>{particle.label} / {particle.symbol}</option>
+  ))
   const running = ['RUNNING', 'PAUSED'].includes(run.phase)
   const visibleSavedRuns = run.phase === 'COMPLETED' ? loadCompletedExperiments() : savedRuns
   const operationAvailable = engine.snapshot().operationPhase === 'STANDBY'
-  return <div className="experiment-builder"><div className="experiment-builder-header"><div><span className="section-kicker">EXPERIMENTS / CONFIGURATION</span><h3>Experiment Builder</h3><p>Compose a fictional run from the simulator's modular beam, collision, and detector systems.</p></div><div className={`experiment-phase ${run.phase.toLowerCase()}`}><i />{run.phase}</div></div><div className="experiment-layout"><section className="experiment-config"><div className="form-section"><div className="section-heading">EXPERIMENT IDENTITY <span>DESIGN</span></div><label className="experiment-field">EXPERIMENT NAME<input value={form.name} onChange={(event) => update('name', event.target.value)} /></label><label className="experiment-field">DESCRIPTION<textarea value={form.description} onChange={(event) => update('description', event.target.value)} rows="3" /></label></div><div className="form-section"><div className="section-heading">BEAM CONFIGURATION <span>ABSTRACT</span></div><div className="experiment-two-col"><label className="experiment-field">BEAM A PARTICLE<select value={form.beamA} onChange={(event) => update('beamA', event.target.value)}>{options}</select></label><label className="experiment-field">BEAM B PARTICLE<select value={form.beamB} onChange={(event) => update('beamB', event.target.value)}>{options}</select></label></div><div className="experiment-two-col"><label className="experiment-field">INITIAL ENERGY<output>{form.initialEnergy.toFixed(1)} GeV</output><input type="range" min="1" max="8" step="0.5" value={form.initialEnergy} onChange={(event) => update('initialEnergy', Number(event.target.value))} /></label><label className="experiment-field">TARGET ENERGY<output>{form.targetEnergy.toFixed(1)} GeV</output><input type="range" min="6" max="24" step="0.5" value={form.targetEnergy} onChange={(event) => update('targetEnergy', Number(event.target.value))} /></label></div><label className="experiment-field">BEAM INTENSITY<output>{form.intensity}%</output><input type="range" min="10" max="100" value={form.intensity} onChange={(event) => update('intensity', Number(event.target.value))} /></label></div><div className="form-section"><div className="section-heading">COLLISION + DETECTOR <span>FICTIONAL SYSTEMS</span></div><div className="experiment-two-col"><label className="experiment-field">COLLISION SETTING<select value={form.collisionMode} onChange={(event) => update('collisionMode', event.target.value)}><option>Standard interaction</option><option>Electromagnetic focus</option><option>Long-lived study</option><option>High variance</option><option>Calibration pulse</option></select></label><label className="experiment-field">DETECTOR CONFIGURATION<select value={form.detector} onChange={(event) => update('detector', event.target.value)}><option>Full</option><option>Precision</option><option>Tracking only</option><option>Calorimeter focus</option></select></label></div><div className="experiment-two-col"><label className="experiment-field">SIMULATED EVENTS<input type="number" min="100" max="50000" step="100" value={form.events} onChange={(event) => update('events', Math.max(100, Number(event.target.value)))} /></label><label className="experiment-field">SIMULATION SPEED<output>{form.speed.toFixed(2)}×</output><input type="range" min="0.25" max="4" step="0.25" value={form.speed} onChange={(event) => update('speed', Number(event.target.value))} /></label></div></div></section><aside className="experiment-summary"><div className="section-heading">EXPERIMENT <span>SUMMARY</span></div><h4>{form.name || 'Untitled Experiment'}</h4><p>{form.description || 'No description provided.'}</p><div className="summary-block"><span>BEAM A</span><strong>{particleOptions.find((particle) => particle.value === form.beamA)?.label}</strong><span>BEAM B</span><strong>{particleOptions.find((particle) => particle.value === form.beamB)?.label}</strong><span>EVENTS</span><strong>{formatNumber(form.events)}</strong><span>DETECTOR</span><strong>{form.detector}</strong><span>SPEED</span><strong>{form.speed.toFixed(2)}×</strong></div>{run.phase === 'IDLE' || run.phase === 'STOPPED' || run.phase === 'COMPLETED' ? <button className="start-experiment" onClick={start} disabled={!operationAvailable} title={operationAvailable ? 'Start standalone local experiment' : 'Complete the collider procedure and return to standby first'}>▶ START EXPERIMENT</button> : <div className="run-actions"><button onClick={() => runner.pause()} disabled={run.phase !== 'RUNNING'}>Ⅱ PAUSE</button><button onClick={() => runner.resume()} disabled={run.phase !== 'PAUSED'}>▶ RESUME</button><button onClick={() => runner.stop()}>■ STOP</button></div>}</aside></div><section className="experiment-run"><div className="run-header"><div><span className="section-kicker">RUN MONITOR</span><h4>{running || run.phase === 'COMPLETED' ? `EVENT ${formatNumber(run.processed)} / ${formatNumber(run.target)}` : 'No active experiment'}</h4></div><span className="run-status">{run.phase}</span></div><div className="progress-track"><i style={{ width: `${Math.min(100, run.progress * 100)}%` }} /></div><div className="run-stats"><span>COLLISIONS<strong>{formatNumber(run.collisions)}</strong></span><span>DETECTED PARTICLES<strong>{formatNumber(run.detected)}</strong></span><span>AVERAGE EVENT ENERGY<strong>{run.averageEnergy.toFixed(2)} GeV</strong></span><span>RUN SPEED<strong>{form.speed.toFixed(2)}×</strong></span></div></section><section className="preset-section"><div className="section-heading">PRESETS <span>LOAD CONFIGURATION</span></div><div className="preset-grid">{experimentPresets.map((preset) => <button className="preset-card" onClick={() => selectPreset(preset)} key={preset.name}><b>{preset.name}</b><span>{preset.beamA.toUpperCase()} + {preset.beamB.toUpperCase()}</span><small>{formatNumber(preset.events)} events / {preset.detector}</small></button>)}</div></section><section className="completed-section"><div className="section-heading">COMPLETED EXPERIMENTS <span>LOCAL ARCHIVE</span></div>{visibleSavedRuns.length ? <div className="completed-list">{visibleSavedRuns.map((saved) => <button className="completed-row" onClick={() => openSaved(saved)} key={saved.id}><b>{saved.name}</b><span>{saved.completedAt?.slice(0, 10)}</span><span>{formatNumber(saved.stats?.processed ?? saved.events)} events</span><span>{formatNumber(saved.stats?.collisions ?? 0)} collisions</span><strong>OPEN</strong></button>)}</div> : <p className="archive-empty">Completed experiments will appear here after a run is finished.</p>}</section></div>
+
+  return (
+    <div className="experiment-builder">
+      <div className="experiment-builder-header">
+        <div>
+          <span className="section-kicker">EXPERIMENTS / CONFIGURATION</span>
+          <h3>Experiment Builder</h3>
+          <p>Configure a local run using a fixed data-informed CMS dimuon model.</p>
+        </div>
+        <div className={`experiment-phase ${run.phase.toLowerCase()}`}><i />{run.phase}</div>
+      </div>
+
+      <div className="experiment-layout">
+        <section className="experiment-config">
+          <div className="form-section">
+            <div className="section-heading">EXPERIMENT IDENTITY <span>DESIGN</span></div>
+            <label className="experiment-field">EXPERIMENT NAME
+              <input value={form.name} onChange={(event) => update('name', event.target.value)} />
+            </label>
+            <label className="experiment-field">DESCRIPTION
+              <textarea value={form.description} onChange={(event) => update('description', event.target.value)} rows="3" />
+            </label>
+          </div>
+
+          <div className="form-section">
+            <div className="section-heading">BEAM CONFIGURATION <span>EDUCATIONAL SETTINGS</span></div>
+            <div className="experiment-two-col">
+              <label className="experiment-field">BEAM A PARTICLE
+                <select value={form.beamA} onChange={(event) => update('beamA', event.target.value)}>{options}</select>
+              </label>
+              <label className="experiment-field">BEAM B PARTICLE
+                <select value={form.beamB} onChange={(event) => update('beamB', event.target.value)}>{options}</select>
+              </label>
+            </div>
+            <div className="experiment-two-col">
+              <label className="experiment-field">INITIAL ENERGY
+                <output>{form.initialEnergy.toFixed(1)} GeV</output>
+                <input type="range" min="1" max="8" step="0.5" value={form.initialEnergy} onChange={(event) => update('initialEnergy', Number(event.target.value))} />
+              </label>
+              <label className="experiment-field">TARGET ENERGY
+                <output>{form.targetEnergy.toFixed(1)} GeV</output>
+                <input type="range" min="6" max="24" step="0.5" value={form.targetEnergy} onChange={(event) => update('targetEnergy', Number(event.target.value))} />
+              </label>
+            </div>
+            <label className="experiment-field">BEAM INTENSITY
+              <output>{form.intensity}%</output>
+              <input type="range" min="10" max="100" value={form.intensity} onChange={(event) => update('intensity', Number(event.target.value))} />
+            </label>
+          </div>
+
+          <div className="form-section">
+            <div className="section-heading">FIXED EVENT MODEL <span>NO PROCESS SELECTOR</span></div>
+            <p className="experiment-model-note">Events resample measured muon kinematics from the bundled CMS J/ψ→μ⁺μ⁻ records, then use a simplified detector response. No other collision channels or energy extrapolation are modeled.</p>
+            <div className="experiment-two-col">
+              <label className="experiment-field">SIMULATED EVENTS
+                <input type="number" min="100" max="50000" step="100" value={form.events} onChange={(event) => update('events', Math.max(100, Number(event.target.value)))} />
+              </label>
+              <label className="experiment-field">SIMULATION SPEED
+                <output>{form.speed.toFixed(2)}×</output>
+                <input type="range" min="0.25" max="4" step="0.25" value={form.speed} onChange={(event) => update('speed', Number(event.target.value))} />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <aside className="experiment-summary">
+          <div className="section-heading">EXPERIMENT <span>SUMMARY</span></div>
+          <h4>{form.name || 'Untitled Experiment'}</h4>
+          <p>{form.description || 'No description provided.'}</p>
+          <div className="summary-block">
+            <span>BEAM A</span><strong>{particleOptions.find((particle) => particle.value === form.beamA)?.label}</strong>
+            <span>BEAM B</span><strong>{particleOptions.find((particle) => particle.value === form.beamB)?.label}</strong>
+            <span>EVENT MODEL</span><strong>CMS DIMUON RESAMPLING</strong>
+            <span>EVENTS</span><strong>{formatNumber(form.events)}</strong>
+            <span>DETECTOR RESPONSE</span><strong>CMS-INSPIRED EDUCATIONAL MODEL</strong>
+            <span>SPEED</span><strong>{form.speed.toFixed(2)}×</strong>
+          </div>
+          {['IDLE', 'STOPPED', 'COMPLETED'].includes(run.phase)
+            ? <button className="start-experiment" onClick={start} disabled={!operationAvailable} title={operationAvailable ? 'Start standalone local experiment' : 'Complete the collider procedure and return to standby first'}>▶ START EXPERIMENT</button>
+            : <div className="run-actions">
+              <button onClick={() => runner.pause()} disabled={run.phase !== 'RUNNING'}>Ⅱ PAUSE</button>
+              <button onClick={() => runner.resume()} disabled={run.phase !== 'PAUSED'}>▶ RESUME</button>
+              <button onClick={() => runner.stop()}>■ STOP</button>
+            </div>}
+        </aside>
+      </div>
+
+      <section className="experiment-run">
+        <div className="run-header">
+          <div>
+            <span className="section-kicker">RUN MONITOR</span>
+            <h4>{running || run.phase === 'COMPLETED' ? `EVENT ${formatNumber(run.processed)} / ${formatNumber(run.target)}` : 'No active experiment'}</h4>
+          </div>
+          <span className="run-status">{run.phase}</span>
+        </div>
+        <div className="progress-track"><i style={{ width: `${Math.min(100, run.progress * 100)}%` }} /></div>
+        <div className="run-stats">
+          <span>COLLISIONS<strong>{formatNumber(run.collisions)}</strong></span>
+          <span>DETECTED PARTICLES<strong>{formatNumber(run.detected)}</strong></span>
+          <span>AVERAGE EVENT ENERGY<strong>{run.averageEnergy.toFixed(2)} GeV</strong></span>
+          <span>RUN SPEED<strong>{form.speed.toFixed(2)}×</strong></span>
+        </div>
+      </section>
+
+      <section className="preset-section">
+        <div className="section-heading">PRESETS <span>LOAD CONFIGURATION</span></div>
+        <div className="preset-grid">
+          {experimentPresets.map((preset) => (
+            <button className="preset-card" onClick={() => selectPreset(preset)} key={preset.name}>
+              <b>{preset.name}</b>
+              <span>{preset.beamA.toUpperCase()} + {preset.beamB.toUpperCase()}</span>
+              <small>{formatNumber(preset.events)} events / CMS dimuon model</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="completed-section">
+        <div className="section-heading">COMPLETED EXPERIMENTS <span>LOCAL ARCHIVE</span></div>
+        {visibleSavedRuns.length
+          ? <div className="completed-list">
+            {visibleSavedRuns.map((saved) => (
+              <button className="completed-row" onClick={() => openSaved(saved)} key={saved.id}>
+                <b>{saved.name}</b>
+                <span>{saved.completedAt?.slice(0, 10)}</span>
+                <span>{formatNumber(saved.stats?.processed ?? saved.events)} events</span>
+                <span>{formatNumber(saved.stats?.collisions ?? 0)} collisions</span>
+                <strong>OPEN</strong>
+              </button>
+            ))}
+          </div>
+          : <p className="archive-empty">Completed experiments will appear here after a run is finished.</p>}
+      </section>
+    </div>
+  )
 }

@@ -197,7 +197,7 @@ function StartupPanel({ simulation, operations }) {
 
       {phase === 'COLLISIONS' && (
         <div className="operation-guidance" aria-live="polite">
-          <p>Collision mode is active in the local educational replay. Use end-of-fill to stop on the next event boundary.</p>
+          <p>Data-informed simulation is active using resampled CMS dimuon records. Use end-of-fill to stop on the next event boundary.</p>
           <button className="operation-action warning" onClick={operations.endFill}>REQUEST END OF FILL</button>
         </div>
       )}
