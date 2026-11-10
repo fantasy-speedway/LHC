@@ -266,7 +266,7 @@ function App() {
           ) : activeView === "Discovery" ? (
             <DiscoveryView simulation={simulation} />
           ) : activeView === "Help" ? (
-            <HelpView />
+            <HelpView onNavigate={setActiveView} />
           ) : activeView === "Settings" ? (
             <SettingsView
               telemetryVisible={telemetryVisible}

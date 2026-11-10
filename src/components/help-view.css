@@ -21,9 +21,9 @@
 .help-glossary dd { color: var(--muted); font-size: 8px; line-height: 1.55; margin: 0; }
 .help-provenance h4 { font-size: 18px; }
 .help-provenance p { max-width: 900px; }
-.help-citation { display: grid; gap: 4px; padding: 10px; margin-top: 11px; border-left: 2px solid var(--cyan); background: #0d1a20; }
+.help-citation { display: grid; min-width: 0; gap: 4px; padding: 10px; margin-top: 11px; border-left: 2px solid var(--cyan); background: #0d1a20; }
 .help-citation strong { color: var(--ink); font-size: 9px; font-weight: 500; }
-.help-citation span { color: var(--muted); font-size: 8px; }
+.help-citation span { color: var(--muted); font-size: 8px; overflow-wrap: anywhere; }
 .help-source-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .help-source-links a { border: 1px solid #315057; padding: 8px; color: var(--cyan); font-size: 8px; text-decoration: none; }
 .help-source-links a:hover { background: #12242a; }
@@ -56,9 +56,68 @@
 .incident-rates-table th, .incident-rates-table td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
 .incident-rates-table th { color: var(--cyan); background: #102127; font-weight: 600; }
 .incident-rates-table td { color: var(--muted); line-height: 1.5; }
-.incident-rates-table td:nth-child(2) { white-space: nowrap; color: var(--ink); }
+.incident-rates-table td:nth-child(2) { color: var(--ink); }
 .incident-model-note { border-left: 2px solid var(--amber); padding-left: 10px; }
-@media (max-width: 800px) { .help-steps { grid-template-columns: 1fr; }.help-glossary { grid-template-columns: 1fr; }.help-page-header, .help-card-heading { align-items: start; flex-direction: column; } }
+.help-page { scroll-behavior: smooth; }
+.help-page > * { min-width: 0; max-width: 100%; }
+.help-contents { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; border: 1px solid var(--line); background: #0b171c; padding: 10px 12px; }
+.help-contents > strong { color: var(--muted); font-size: 12px; letter-spacing: .06em; margin-right: 4px; }
+.help-contents a { border: 1px solid #315057; border-radius: 2px; color: var(--cyan); padding: 7px 9px; text-decoration: none; }
+.help-contents a:hover, .help-contents a:focus-visible { background: #12242a; outline: 2px solid var(--cyan); outline-offset: 2px; }
+.help-page-card[id] { scroll-margin-top: 12px; }
+.help-page :where(p, li, dd, dt, label, input, select, button, small, th, td, span, strong, b, output, a) {
+  font-size: max(15px, 0.95em) !important;
+}
+.help-page :where(p, dd, li, span) { line-height: 1.65; }
+.help-page-header h3 { font-size: 30px; }
+.help-card-heading h4 { font-size: 23px; line-height: 1.2; }
+.help-steps h4, .help-topic h5, .incident-table-heading { color: var(--ink); font-size: 18px; line-height: 1.25; margin: 0 0 8px; }
+.help-page-card > p { line-height: 1.7; }
+.help-topic { border-top: 1px solid rgba(33,53,59,.8); margin-top: 12px; padding-top: 12px; }
+.help-topic:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+.help-topic p { color: var(--muted); font-size: 15px; line-height: 1.7; margin: 7px 0; }
+.help-page-card p, .help-glossary dd, .help-operation-steps span, .injector-guide-stages small,
+.priority-help-card span, .incident-rates-table td, .help-citation span { color: #b7c5c2; }
+.help-important-note { border-left: 3px solid var(--cyan); background: #102127; padding: 11px 13px; margin: 10px 0 14px; }
+.help-important-note strong { color: var(--ink); }
+.help-route-grid, .help-reading-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.help-route-grid article, .help-reading-grid article { min-width: 0; border: 1px solid var(--line); background: #0d1a20; padding: 13px; }
+.help-route-grid article { display: flex; flex-direction: column; align-items: flex-start; }
+.help-route-number { color: var(--cyan); font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+.help-route-grid h5, .help-reading-grid h5 { color: var(--ink); font-size: 18px; line-height: 1.25; margin: 8px 0; }
+.help-route-grid ol { margin: 0 0 10px; padding-left: 22px; }
+.help-route-grid li { color: #b7c5c2; padding: 3px 0; }
+.help-route-grid strong, .help-reading-grid strong { color: var(--ink); }
+.help-route-grid p, .help-reading-grid p { margin: 7px 0; }
+.help-route-grid button, .help-route-button { min-height: 44px; margin-top: auto; border: 1px solid #34717a; background: #10272d; color: var(--cyan); padding: 9px 12px; font-weight: 600; cursor: pointer; }
+.help-route-grid button:hover, .help-route-button:hover { background: #17343a; }
+.help-reading-steps { margin: 0; padding-left: 25px; }
+.help-reading-steps li { color: #b7c5c2; padding: 4px 0 7px 4px; line-height: 1.65; }
+.help-reading-grid { margin: 12px 0; }
+.help-route-button { margin-top: 8px; }
+.help-glossary div { grid-template-columns: minmax(100px, 0.35fr) minmax(0, 1fr); gap: 12px; }
+.help-glossary dd, .help-operation-steps span, .injector-guide-stages small,
+.priority-help-card span, .incident-rates-table td { overflow-wrap: anywhere; }
+.incident-rates-table { table-layout: fixed; }
+.incident-rates-table th, .incident-rates-table td { padding: 9px; overflow-wrap: anywhere; }
+.help-source-links a { min-height: 42px; display: inline-flex; align-items: center; }
+.help-data-badge { white-space: normal; line-height: 1.45; }
+.help-page :where(a, button, select, input, textarea):focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 2px;
+}
+@media (max-width: 800px) { .help-steps { grid-template-columns: 1fr; }.help-glossary { grid-template-columns: 1fr; }.help-page-header, .help-card-heading { align-items: stretch; flex-direction: column; } }
 @media (max-width: 600px) { .help-operation-steps { grid-template-columns: 1fr; } }
 @media (max-width: 1000px) { .injector-guide-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 800px) { .priority-help-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .help-route-grid, .help-reading-grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .help-page { gap: 9px; }
+  .help-page-card { padding: 12px; }
+  .help-page-header, .help-card-heading { gap: 9px; }
+  .help-glossary div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .help-contents { gap: 6px; }
+  .help-contents > strong { flex-basis: 100%; }
+  .incident-rates-table th, .incident-rates-table td { padding: 6px 4px; }
+  .incident-rates-table td:nth-child(2) { white-space: normal; }
+}

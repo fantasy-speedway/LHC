@@ -84,3 +84,7 @@
   .event-display-actions { flex-wrap: wrap; justify-content: end; }
 }
 .experiment-model-note { margin: 10px 0 0; color: var(--muted); font-size: 8px; line-height: 1.55; }
+
+.control-room :where(p, li, dd, dt, label, input, select, textarea, button, small, th, td, span:not(.nav-icon):not(.telemetry-icon):not(.warning-icon):not(.icon-button), strong, b, output, a) {
+  font-size: max(12px, 0.9em) !important;
+}

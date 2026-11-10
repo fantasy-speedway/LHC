@@ -6,29 +6,146 @@ const acceleratorComplex = 'https://home.cern/science/accelerators/accelerator-c
 const boosterReference = 'https://home.cern/science/accelerators/proton-synchrotron-booster'
 const lhcReference = 'https://home.cern/science/accelerators/large-hadron-collider'
 
-export default function HelpView() {
+export default function HelpView({ onNavigate = () => {} }) {
   return (
     <div className="help-page">
       <header className="help-page-header">
         <div>
           <span className="section-kicker">HELP / USER GUIDE</span>
-          <h3>Using the Collision Lab</h3>
-          <p>Explore the controls, inspect a collision, and understand which numbers come from CERN.</p>
+          <h3>Collision Lab Guide</h3>
+          <p>Follow a guided path, learn what the plots and readouts mean, and tell recorded CERN measurements apart from simulator estimates.</p>
         </div>
-        <span className="help-data-badge"><i /> CERN DATA REFERENCES LOADED</span>
+        <span className="help-data-badge"><i /> CERN OPEN DATA SAMPLE · NOT LIVE</span>
       </header>
 
-      <section className="help-page-card">
-        <span className="section-kicker">QUICK START</span>
-        <div className="help-steps">
-          <article><b>01</b><div><h4>Follow the operator sequence</h4><p>Use the staged procedure on <strong>Overview</strong>. Configure beam channels in <strong>Beam Control</strong>; inspect the accelerator and injector schematic in <strong>Collider</strong>. Controls are an educational model, not machine controls.</p></div></article>
-          <article><b>02</b><div><h4>Inspect an experiment</h4><p>Open <strong>Detector</strong> and select <strong>ATLAS</strong> or <strong>CMS</strong>. The bundled recorded event sample is CMS-only; ATLAS is shown as a detector reference.</p></div></article>
-          <article><b>03</b><div><h4>Open a collision</h4><p>Go to <strong>Collision</strong> or <strong>Event Display</strong> to inspect an event. Select a muon track in Event Display to see its recorded kinematics.</p></div></article>
-          <article><b>04</b><div><h4>Compare and export</h4><p>Use <strong>Analysis</strong> for simple plots and <strong>Data</strong> to browse or export event and particle records.</p></div></article>
+      <nav className="help-contents" aria-label="Help page contents">
+        <strong>JUMP TO</strong>
+        <a href="#first-visit">Start here</a>
+        <a href="#read-analysis">Read the analysis</a>
+        <a href="#read-events">Read an event</a>
+        <a href="#quick-start">Quick start</a>
+        <a href="#machine-physics">Machine physics</a>
+        <a href="#startup-guide">Start-up</a>
+        <a href="#incidents">Warnings and faults</a>
+        <a href="#detectors">Detectors</a>
+        <a href="#measurements">Measurements</a>
+        <a href="#data-provenance">Data and limitations</a>
+        <a href="#event-priorities">Event priorities</a>
+      </nav>
+
+      <section className="help-page-card" id="first-visit">
+        <div className="help-card-heading">
+          <div><span className="section-kicker">NEW HERE? CHOOSE A STARTING POINT</span><h4>You do not need to start the machine to learn from the recorded data</h4></div>
+          <span className="help-units">SUGGESTED FIRST VISIT</span>
+        </div>
+        <p className="help-important-note"><strong>Important:</strong> The accelerator controls are an educational simulation. Recorded CMS measurements are available in Analysis independently of the simulated start-up sequence.</p>
+        <div className="help-route-grid">
+          <article>
+            <span className="help-route-number">01 / BEST FIRST STEP</span>
+            <h5>Explore real recorded measurements</h5>
+            <ol>
+              <li>Open <strong>Analysis</strong>.</li>
+              <li>In <strong>INPUT DATASET</strong>, choose <strong>CMS 2010 J/psi dimuon reference</strong>.</li>
+              <li>Change one cut at a time and watch the cutflow, mass histogram, and selected count update.</li>
+            </ol>
+            <p>This uses the 2,000-event CERN Open Data sample. It does not require starting the simulated collider.</p>
+            <button type="button" onClick={() => onNavigate('Analysis')}>OPEN ANALYSIS</button>
+          </article>
+          <article>
+            <span className="help-route-number">02 / WATCH THE SIMULATION</span>
+            <h5>Run a modeled fill</h5>
+            <ol>
+              <li>Open <strong>Overview</strong> and follow the operator controls in order.</li>
+              <li>Wait for each timed step; resolve any warning before continuing.</li>
+              <li>When collisions are active, inspect the event in <strong>Collision</strong> or <strong>Event Display</strong>.</li>
+            </ol>
+            <p>Each simulated event resamples a recorded CMS template and adds modeled detector response. It is not a new CERN measurement.</p>
+            <button type="button" onClick={() => onNavigate('Overview')}>OPEN OVERVIEW</button>
+          </article>
+          <article>
+            <span className="help-route-number">03 / SAVE YOUR RESEARCH</span>
+            <h5>Keep notes and results</h5>
+            <ol>
+              <li>Save interesting events from <strong>Event Display</strong>.</li>
+              <li>Save an analysis report and optionally link it to a project.</li>
+              <li>Use <strong>Data</strong> to organize notes, collections, and export a backup.</li>
+            </ol>
+            <p>Research records stay in this browser profile; export an archive to move or back them up.</p>
+            <button type="button" onClick={() => onNavigate('Data')}>OPEN DATA &amp; RESEARCH</button>
+          </article>
         </div>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="read-analysis">
+        <div className="help-card-heading">
+          <div><span className="section-kicker">ANALYSIS / WHAT TO LOOK AT</span><h4>A simple guide to the CMS dimuon analysis</h4></div>
+          <span className="help-units">COUNTS ARE NOT CROSS-SECTIONS</span>
+        </div>
+        <div className="help-topic">
+          <h5>Try this in order</h5>
+          <ol className="help-reading-steps">
+            <li><strong>Confirm the input.</strong> The <strong>INPUT DATASET</strong> selector controls the CMS-style selection panel. Start with the CMS 2010 reference option to analyze the recorded 2,000-event sample.</li>
+            <li><strong>Read the cutflow from top to bottom.</strong> Each row counts how many events remain after that requirement. Counts normally stay the same or decrease. If few events remain, loosen a cut; if none remain, relax the cuts until candidates return.</li>
+            <li><strong>Change one cut at a time.</strong> The pT and |η| sliders apply to both muons; the mass limits select the pair-mass range; the charge checkbox requires one positive and one negative muon. Watching the counts change shows which requirement removes events.</li>
+            <li><strong>Read the mass histogram.</strong> Horizontal position is dimuon mass in GeV; each bar is the number of candidates in that mass interval. A concentration near 3.1 GeV is consistent with the J/ψ resonance this sample was selected to study. It is not evidence of a new particle or a discovery.</li>
+            <li><strong>Check the candidate table.</strong> Run/event identifies the source record. Recomputed mass is rebuilt from the stored four-momenta; recorded mass is the separate value in the source CSV. Small differences can arise from rounding or reconstruction details.</li>
+            <li><strong>Save a report when useful.</strong> Select a project if you want to file the report there, then press <strong>SAVE ANALYSIS REPORT</strong>. The report stores the chosen cuts, counts, histogram, and selected records.</li>
+          </ol>
+        </div>
+        <div className="help-reading-grid">
+          <article>
+            <h5>What the summary numbers mean</h5>
+            <p><strong>Input events</strong> is the starting sample size. <strong>Selected candidates</strong> is the number passing all current requirements. <strong>Selection efficiency</strong> is selected divided by input for this sample and these cuts; it is not detector efficiency or a physical production rate.</p>
+            <p><strong>Mean selected mass</strong> is the average reconstructed mass of selected pairs. <strong>Mass RMS</strong> describes their spread; it is not an uncertainty on a discovery claim.</p>
+          </article>
+          <article>
+            <h5>Use the other charts carefully</h5>
+            <p>Bars in the particle and observable charts show counts per category or bin. Their labels give the particle type or the lower edge of a bin; they are summaries, not one dot per collision. The Analysis page’s general workspace charts summarize current and archived simulator runs, separately from the CMS reference selection panel.</p>
+            <p>For recorded CMS events, raw calorimeter hits and missing transverse momentum are not in this CSV. A detector layer marked <strong>NOT IN CSV</strong> means the source does not supply that information—not that the detector measured zero.</p>
+          </article>
+          <article>
+            <h5>Do not over-interpret estimates</h5>
+            <p>The sideband background, S/B, and S/√B figures use a simplified flat-background assumption and unweighted counts. They are teaching aids, not official CMS statistical results or discovery significance. Model-flagged events are heuristic prompts to inspect, not confirmed unusual physics.</p>
+          </article>
+        </div>
+        <button className="help-route-button" type="button" onClick={() => onNavigate('Analysis')}>OPEN ANALYSIS</button>
+      </section>
+
+      <section className="help-page-card" id="read-events">
+        <div className="help-card-heading">
+          <div><span className="section-kicker">EVENT DISPLAY / WHAT YOU ARE SEEING</span><h4>Read one collision without mistaking the illustration for detector data</h4></div>
+          <span className="help-units">SIMPLIFIED VISUALIZATION</span>
+        </div>
+        <div className="help-reading-grid">
+          <article>
+            <h5>Understand the picture</h5>
+            <p>The bright center marks the modeled interaction point. Concentric colored rings represent detector layers; colored lines represent particle tracks, and points show the displayed detector response. The view is a simplified schematic, not a photograph, a scale drawing, or a full reconstruction of raw CMS detector hits.</p>
+            <p>Select a track in the picture or the muon-track buttons to open its inspector. Use play, replay, zoom, and rotate to explore the visualization; these controls change the display, not the underlying recorded event.</p>
+          </article>
+          <article>
+            <h5>Check the event label before interpreting it</h5>
+            <p><strong>CERN DATA REFERENCE</strong> identifies a recorded source event. Its CMS run and event numbers point back to the dataset. <strong>DATA-INFORMED SIMULATION</strong> means the event was resampled from a listed CMS template and given modeled response; it is not a recorded collision.</p>
+            <p>Configured beam energy belongs to the machine model. It does not change or rescale the recorded template muon momenta. The bundled CSV does not provide collision energy or a source timestamp.</p>
+          </article>
+          <article>
+            <h5>Use measurements in context</h5>
+            <p>Energy (GeV) and momentum (GeV/c) are different quantities. pT is momentum perpendicular to the beam; η describes direction relative to the beam; φ is the angle around the beam axis; charge tells whether the muon is positive or negative. The glossary below explains each field in more detail.</p>
+            <p>A missing or unavailable value means it was not supplied by the source or model—it should not be read as zero.</p>
+          </article>
+        </div>
+        <button className="help-route-button" type="button" onClick={() => onNavigate('Event Display')}>OPEN EVENT DISPLAY</button>
+      </section>
+
+      <section className="help-page-card" id="quick-start">
+        <span className="section-kicker">QUICK REFERENCE / WHERE EACH PAGE LEADS</span>
+        <div className="help-steps">
+          <article><b>01</b><div><h4>Operate and configure</h4><p><strong>Overview</strong> contains staged machine controls; <strong>Beam Control</strong> configures Beam A and B; <strong>Collider</strong> is the accelerator map. None of these pages controls CERN equipment.</p></div></article>
+          <article><b>02</b><div><h4>Inspect detectors and events</h4><p><strong>Detector</strong> shows ATLAS or CMS subsystem references. <strong>Collision</strong> plays the current event; <strong>Event Display</strong> provides source identifiers, particle inspection, priority review, and saving.</p></div></article>
+          <article><b>03</b><div><h4>Study and keep results</h4><p><strong>Analysis</strong> provides the CMS selection and workspace summaries. <strong>Data</strong> organizes projects, notes, collections, reports, and exports.</p></div></article>
+        </div>
+      </section>
+
+      <section className="help-page-card" id="page-guide">
         <span className="section-kicker">PAGE GUIDE / DISTINCT WORKSPACES</span>
         <div className="help-steps">
           <article><b>01</b><div><h4>Operate and configure</h4><p><strong>Overview</strong> summarizes the run and owns the staged procedure. <strong>Collider</strong> is the interactive accelerator map. <strong>Beam Control</strong> provides separate Beam A/B configuration banks; stage values and press each channel’s load button for its timed apply.</p></div></article>
@@ -37,20 +154,33 @@ export default function HelpView() {
         </div>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="machine-physics">
         <div className="help-card-heading">
           <div><span className="section-kicker">PHYSICS / DIAGNOSTICS / ANALYSIS</span><h4>How to interpret the modeled beams and CMS workflow</h4></div>
           <span className="help-units">EDUCATIONAL CALCULATIONS</span>
         </div>
-        <p>Beam Control derives relativistic momentum from E² = p² + m² and uses magnetic rigidity Bρ = p [GeV/c] / (0.299792458 × |q/e|), where the particle species sets its rest mass and signed charge sets the rigidity polarity. The configured dipole field can limit the modeled beam energy. Beam energy, species, and direction affect the calculated centre-of-mass energy. The machine-physics panel updates energy, momentum, signed rigidity, dipole field, emittance, transverse size, divergence, orbit, and stability from the current settings.</p>
-        <p>The educational RF ramp converts cavity voltage and charge magnitude into an energy-gain rate, calibrated so 16 MV spans the requested energy change over the modeled 60-second ramp. Lower voltage takes longer and may leave the beam below target when the ramp ends; a ramp below target must be retried before orbit correction. This is a linear synchronous-phase approximation, not a turn-by-turn RF cavity simulation. Quadrupole focusing uses gradient divided by magnetic rigidity; beta-star is scaled to a 12 GeV proton reference. The orbit-correction step reduces the modeled orbit offset. Vacuum pressure and cryogenic temperature affect stability, and cooling degradation also scales simulated detector efficiency. These relationships are teaching models, not validated predictions.</p>
-        <p>Bunch spacing limits the number of bunch slots that fit in a modeled revolution and therefore changes bunch-crossing frequency and the luminosity estimate. Luminosity assumes Gaussian head-on proton bunches, 1.15×10¹¹ nominal protons scaled by intensity, normalized emittance 2.5 μm, beta-star 0.4 m, and a modeled LHC bending radius of 2,803.95 m; it is only estimated for counter-circulating proton beams. Machine Physics Telemetry charts sample local fill history and are not live CERN measurements.</p>
-        <p>For data-informed simulated events, the detector model generates smeared track impact-parameter measurements and fits them with a beam-spot constraint to provide an educational vertex estimate. Those per-track measurements are synthetic: the bundled CMS 2010 J/ψ dimuon sample contains reconstructed momenta, not raw hits or impact parameters. For recorded CMS events the vertex is therefore shown as unavailable rather than inferred. The dataset remains a selected dimuon sample, not the full variety of LHC collisions.</p>
-        <p>In <strong>Analysis</strong>, choose the CMS 2010 reference dataset or the current/archived workspace. Adjust the opposite-charge, pT, |eta|, and mass-window cuts; read the sequential cutflow and inspect the histogram and candidate table. Pair masses are recomputed from recorded four-vectors and shown separately from source CSV masses. The observable panels plot available pT, eta, azimuth, and dimuon candidates. The recorded CSV has no missing-pT measurement; simulation pT imbalance is calculated from the selected muon tracks only and is not full-event missing transverse momentum. A fixed sideband calculation shows an educational S/B and S/√B estimate using an unweighted, flat-background assumption. These values are not a validated CMS analysis or discovery significance.</p>
-        <p>Save an Analysis report and optionally link it to a research project. On <strong>Data</strong>, create projects and event collections, add saved collisions to the selected collection, and link notebook entries to projects, experiments, and datasets. The research timeline joins projects, notes, reports, and completed runs. These records persist in the current browser profile only; use <strong>Export Complete Research Archive JSON</strong> for a backup. Import merges by record ID and keeps existing local records when IDs collide. This does not synchronize data between browsers or devices.</p>
+        <div className="help-topic">
+          <h5>Beam settings and machine diagnostics</h5>
+          <p>Beam Control derives relativistic momentum from E² = p² + m² and uses magnetic rigidity Bρ = p [GeV/c] / (0.299792458 × |q/e|). Particle mass and charge, dipole field, beam energy, and direction affect the machine diagnostics. The console displays the derived energy, momentum, rigidity, emittance, beam size, divergence, orbit, and centre-of-mass energy.</p>
+          <p>RF voltage and charge set the modeled energy-gain rate. At 16 MV, the requested ramp takes the model’s 60-second reference; lower voltage takes longer and may leave the beam below target. The ramp is a simplified linear model, not a detailed RF cavity simulation. Quadrupole gradient and magnetic rigidity affect the modeled beta-star and beam optics. Vacuum pressure, cryogenic temperature, and orbit correction affect the stability estimate. These are educational relationships, not validated predictions.</p>
+          <p>Bunch spacing affects the number of bunches that fit in a modeled revolution, which changes bunch-crossing frequency and estimated luminosity. Luminosity assumes Gaussian head-on proton bunches and is available only for counter-circulating proton beams. Machine Physics Telemetry shows local simulated fill history, not live CERN readings.</p>
+        </div>
+        <div className="help-topic">
+          <h5>Detector response and reconstructed vertex</h5>
+          <p>For data-informed simulated events, the detector model creates smeared track measurements and fits an educational vertex. These impact-parameter measurements are synthetic, not present in the CMS source file. Recorded CMS events do not include the raw hits or impact parameters needed for that fit, so their vertex is shown as unavailable.</p>
+        </div>
+        <div className="help-topic">
+          <h5>Analyze the CMS dimuon sample</h5>
+          <p>In <strong>Analysis</strong>, choose the CMS 2010 reference dataset or the current/archived workspace. Adjust the opposite-charge, pT, |eta|, and mass-window cuts; review the cutflow, histogram, and candidate table. Pair masses are recomputed from recorded four-vectors and shown separately from source CSV masses. The available plots cover pT, eta, azimuth, and dimuon candidates.</p>
+          <p>The recorded CSV has no missing-pT measurement. Simulated pT imbalance uses selected muon tracks only; it is not full-event missing transverse momentum. The sideband S/B and S/√B estimates assume an unweighted, flat background and are not a validated CMS analysis or discovery significance.</p>
+        </div>
+        <div className="help-topic">
+          <h5>Keep research records</h5>
+          <p>Save an Analysis report and optionally link it to a research project. In <strong>Data</strong>, create projects and event collections, save collisions to a collection, and connect notes to projects, experiments, and datasets. The research timeline joins projects, notes, reports, and completed runs. Records persist in this browser profile; export the complete research archive for a backup. Import merges by record ID and does not synchronize between browsers or devices.</p>
+        </div>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="startup-guide">
         <div className="help-card-heading">
           <div><span className="section-kicker">OPERATIONS / EDUCATIONAL SEQUENCE</span><h4>Start-up and normal end-of-fill</h4></div>
           <span className="help-units">MODEL ONLY / NO LIVE CONNECTION</span>
@@ -76,7 +206,7 @@ export default function HelpView() {
         </div>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="control-timing">
         <div className="help-card-heading">
           <div><span className="section-kicker">OPERATIONS / MODEL TIMING</span><h4>Control transition times</h4></div>
           <span className="help-units">ACCELERATED SIMULATOR TIME</span>
@@ -98,7 +228,7 @@ export default function HelpView() {
         </table>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="incidents">
         <div className="help-card-heading">
           <div><span className="section-kicker">OPERATIONS / INCIDENT MODEL</span><h4>Warnings, faults, and automatic beam dumps</h4></div>
           <span className="help-units">SIMULATED PROBABILITIES</span>
@@ -137,7 +267,7 @@ export default function HelpView() {
         <p className="incident-model-note">The running probability list includes magnet quench once (0.1%); its separate mention as a very rare event does not add a second chance. The model uses a mutually exclusive weighted draw, so the no-incident chance is the remainder after all listed running outcomes.</p>
       </section>
 
-      <section className="help-page-card injector-guide">
+      <section className="help-page-card injector-guide" id="injector-chain">
         <div className="help-card-heading">
           <div><span className="section-kicker">ACCELERATOR MAP / CERN REFERENCE</span><h4>Why there is a smaller ring</h4></div>
           <span className="help-units">SCHEMATIC / NOT TO SCALE</span>
@@ -157,7 +287,7 @@ export default function HelpView() {
         </div>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="detectors">
         <div className="help-card-heading">
           <div><span className="section-kicker">DETECTOR / EXPERIMENT SELECTOR</span><h4>ATLAS and CMS are separate experiments</h4></div>
           <span className="help-units">INDIVIDUAL SUBSYSTEM VIEWS</span>
@@ -169,25 +299,25 @@ export default function HelpView() {
         </div>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="measurements">
         <div className="help-card-heading">
           <div><span className="section-kicker">READING AN EVENT</span><h4>What the measurements mean</h4></div>
           <span className="help-units">UNITS SHOWN IN GeV</span>
         </div>
         <dl className="help-glossary">
           <div><dt>Run / Event</dt><dd>Original CMS run and event identifiers. Use these to find the recorded event in its source dataset.</dd></div>
-          <div><dt>E</dt><dd>Measured energy of one reconstructed muon, in GeV.</dd></div>
-          <div><dt>pT</dt><dd>Transverse momentum, perpendicular to the beam direction, in GeV/c.</dd></div>
-          <div><dt>px, py, pz</dt><dd>Momentum components along the detector's x, y, and beam (z) axes, in GeV/c.</dd></div>
-          <div><dt>eta (η)</dt><dd>Pseudorapidity, a direction coordinate. Values near zero point across the detector; larger absolute values point closer to the beam.</dd></div>
-          <div><dt>phi (φ)</dt><dd>Azimuthal direction around the beam axis, in radians.</dd></div>
-          <div><dt>Q</dt><dd>Electric charge in units of the positron charge: +1 or −1 for these muons.</dd></div>
-          <div><dt>M</dt><dd>Recorded invariant mass of the muon pair, in GeV. This educational sample selects J/ψ candidates in the 2–5 GeV mass range.</dd></div>
+          <div><dt>E</dt><dd>Energy of one reconstructed muon, in GeV. Do not compare it as though it were momentum; they are related but distinct quantities.</dd></div>
+          <div><dt>pT</dt><dd>Transverse momentum: momentum perpendicular to the beam direction, in GeV/c. It is often used to select energetic particles.</dd></div>
+          <div><dt>px, py, pz</dt><dd>Momentum components along the detector x, y, and beam (z) axes, in GeV/c. The components are used to reconstruct pair quantities.</dd></div>
+          <div><dt>eta (η)</dt><dd>Pseudorapidity describes direction relative to the beam. η near zero is transverse; larger |η| points closer to the beam line. It is not energy.</dd></div>
+          <div><dt>phi (φ)</dt><dd>Azimuthal angle around the beam axis, in radians. A full turn is about 6.28 radians.</dd></div>
+          <div><dt>Q</dt><dd>Electric charge in units of the positron charge: +1 or −1 for these muons. The dimuon selection can require opposite signs.</dd></div>
+          <div><dt>M</dt><dd>Invariant mass of the muon pair, in GeV/c². The selected sample is focused on J/ψ→μ⁺μ⁻ events; a mass near 3.1 GeV is expected.</dd></div>
           <div><dt>GT / GG</dt><dd>Muon reconstruction categories in the source file: T means tracker muon; G means global muon. They are source classifications, not simulated probabilities.</dd></div>
         </dl>
       </section>
 
-      <section className="help-page-card help-provenance">
+      <section className="help-page-card help-provenance" id="data-provenance">
         <div>
           <span className="section-kicker">DATA PROVENANCE / BE HONEST ABOUT THE MODEL</span>
           <h4>Recorded measurements and data-informed simulation</h4>
@@ -205,7 +335,7 @@ export default function HelpView() {
         </div>
       </section>
 
-      <section className="help-page-card">
+      <section className="help-page-card" id="event-priorities">
         <div className="help-card-heading">
           <div><span className="section-kicker">EVENT ARCHIVE / REVIEWED LABELS</span><h4>Priority markers and how they are assigned</h4></div>
           <span className="help-units">RULE-BASED / LOCAL STORAGE</span>
@@ -221,7 +351,7 @@ export default function HelpView() {
         <p className="priority-help-intro">Saved events keep the source run/event, app save time, reconstructed-particle values and directions, mass candidates, reconstruction categories, and all other available event fields. Source timestamp, collision energy, missing pT, and detector quality stay null/unavailable when absent from the bundled CSV; the app does not synthesize them.</p>
       </section>
 
-      <section className="help-page-card help-shortcuts">
+      <section className="help-page-card help-shortcuts" id="shortcuts">
         <span className="section-kicker">KEYBOARD SHORTCUTS</span>
         <p><kbd>F</kbd> fullscreen · <kbd>?</kbd> open quick help · <kbd>1–4</kbd> Overview, Detector, Event Display, Experiments. Use the staged operator panel for collider start-up and end-of-fill.</p>
       </section>
