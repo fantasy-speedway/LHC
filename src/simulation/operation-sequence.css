@@ -2,9 +2,13 @@
 .operation-sequence-header { display: flex; justify-content: space-between; align-items: start; gap: 14px; }
 .operation-sequence-header h3 { margin: 4px 0; color: #edf5f2; font: 600 20px 'Barlow Condensed', sans-serif; }
 .operation-sequence-header p { color: var(--muted); font-size: 9px; line-height: 1.5; margin: 0; }
-.operation-skip-link { display: inline; border: 0; background: transparent; color: #70878a; padding: 3px 0; margin-top: 5px; font: inherit; font-size: 8px; text-align: left; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; cursor: pointer; }
-.operation-skip-link:hover { color: var(--cyan); }
-.operation-skip-link:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.operation-skip-options { margin-top: 8px; color: #a7b9b7; font-size: 12px; }
+.operation-skip-options summary { width: fit-content; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+.operation-skip-options summary:hover { color: var(--cyan); }
+.operation-skip-options p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 7px 0; }
+.operation-skip-options button { border: 1px solid #315057; background: transparent; color: #a7b9b7; padding: 7px 9px; font-size: 12px; cursor: pointer; }
+.operation-skip-options button:hover { border-color: var(--cyan); color: var(--cyan); }
+.operation-skip-options :where(summary, button):focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 .operation-phase { color: var(--cyan); border: 1px solid #315057; padding: 7px 9px; font-size: 8px; letter-spacing: .06em; white-space: nowrap; }
 .operation-phase.phase-collisions, .operation-phase.phase-end-fill-requested { color: var(--cyan); border-color: #397c75; }
 .operation-phase.phase-dumping, .operation-phase.phase-end-fill { color: var(--amber); border-color: #745c36; }

@@ -251,7 +251,6 @@ export default function OperationSequence({ simulation, operations }) {
           <span className="section-kicker">SIMULATED OPERATOR PROCEDURE</span>
           <h3 id="operation-sequence-title">Interlocked start-up and fill controls</h3>
           <p>Operate each named control in order. Pushbuttons run timed commands; switches stay latched and can be turned off to reset dependent steps.</p>
-          {canSkipStartup && <button className="operation-skip-link" type="button" onClick={operations.skipStartup}>Already familiar? Skip timed setup</button>}
         </div>
         <strong className={`operation-phase phase-${phase.toLowerCase().replaceAll('_', '-')}`}>{phase.replaceAll('_', ' ')}</strong>
       </header>
@@ -261,6 +260,13 @@ export default function OperationSequence({ simulation, operations }) {
       <p className="operation-disclaimer">
         Educational state machine only: timed cooldown, vacuum, magnet, and energy readings are simplified model outputs, not live measurements. Actual LHC commissioning, machine protection, cryogenics, injector transfers, detector coordination, and approvals require CERN equipment and qualified operators. This app cannot control or certify accelerator hardware.
       </p>
+      {canSkipStartup && (
+        <details className="operation-skip-options">
+          <summary>Optional quick start</summary>
+          <p>Skip the timed control sequence and start the local, data-informed collision replay.</p>
+          <button type="button" onClick={operations.skipStartup}>SKIP TIMED SETUP</button>
+        </details>
+      )}
     </section>
   )
 }

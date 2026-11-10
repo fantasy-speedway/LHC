@@ -66,6 +66,22 @@
 .help-contents a { border: 1px solid #315057; border-radius: 2px; color: var(--cyan); padding: 7px 9px; text-decoration: none; }
 .help-contents a:hover, .help-contents a:focus-visible { background: #12242a; outline: 2px solid var(--cyan); outline-offset: 2px; }
 .help-page-card[id] { scroll-margin-top: 12px; }
+.help-reference, .help-optional-simulation { border: 1px solid var(--line); background: #0b171c; padding: 12px 14px; }
+.help-reference > summary, .help-optional-simulation > summary { color: var(--cyan); cursor: pointer; font-weight: 600; line-height: 1.5; }
+.help-reference > summary:hover, .help-optional-simulation > summary:hover { color: var(--ink); }
+.help-reference :where(summary, a, button):focus-visible, .help-optional-simulation :where(summary, a, button):focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.help-reference-content { display: grid; gap: 12px; margin-top: 12px; }
+.help-reference-content > .help-page-card { scroll-margin-top: 12px; }
+.help-walkthrough { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; counter-reset: walkthrough; }
+.help-walkthrough > li { display: grid; grid-template-columns: minmax(100px, 0.2fr) minmax(0, 1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--line); background: #0d1a20; padding: 12px; counter-increment: walkthrough; }
+.help-walkthrough > li h5 { color: var(--ink); font-size: 18px; line-height: 1.3; margin: 0 0 4px; }
+.help-walkthrough > li p { color: #b7c5c2; margin: 0; }
+.help-walkthrough > li > :where(button, a), .help-optional-simulation button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border: 1px solid #34717a; background: #10272d; color: var(--cyan); padding: 9px 12px; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+.help-walkthrough > li > :where(button, a):hover, .help-optional-simulation button:hover { background: #17343a; }
+.help-optional-simulation { margin-top: 12px; }
+.help-optional-simulation p { color: #b7c5c2; margin: 10px 0; }
+.help-page #data-reading > p a { color: var(--cyan); }
+.help-page #data-reading > p a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 .help-page :where(p, li, dd, dt, label, input, select, button, small, th, td, span, strong, b, output, a) {
   font-size: max(15px, 0.95em) !important;
 }
@@ -119,6 +135,9 @@
   .help-page { gap: 9px; }
   .help-page-card { padding: 12px; }
   .help-page-header, .help-card-heading { gap: 9px; }
+  .help-walkthrough > li { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+  .help-walkthrough > li > :where(button, a) { width: 100%; }
+  .help-reference, .help-optional-simulation { padding: 11px 12px; }
   .help-glossary div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .help-contents { gap: 6px; }
   .help-contents > strong { flex-basis: 100%; }

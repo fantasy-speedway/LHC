@@ -7,43 +7,44 @@ const detectorSystems = {
     name: 'ATLAS',
     description: 'A general-purpose experiment with an inner tracker, calorimeters, a large air-core muon spectrometer, and a toroidal magnet system.',
     components: [
-      { id: 'tracking', name: 'Inner Detector', detail: 'Pixel, silicon-strip, and transition-radiation tracking systems.' },
-      { id: 'electromagnetic', name: 'Electromagnetic calorimeter', detail: 'Liquid-argon calorimetry measures electromagnetic showers.' },
-      { id: 'hadronic', name: 'Hadronic calorimeter', detail: 'Tile and liquid-argon systems sample hadronic showers.' },
-      { id: 'muon', name: 'Muon spectrometer', detail: 'Large outer tracking chambers measure muons.' },
-      { id: 'magnets', name: 'Magnet system', detail: 'Solenoid and toroidal magnets bend charged-particle trajectories.' },
+      { id: 'tracking', name: 'Inner Detector', detail: 'Pixel, silicon-strip, and transition-radiation tracking systems.', purpose: 'Reconstruct charged-particle trajectories close to the interaction point; track curvature helps determine momentum and charge in the magnetic field.', readout: 'ATLAS reference only. The bundled event sample contains no ATLAS tracks or detector hits.' },
+      { id: 'electromagnetic', name: 'Electromagnetic calorimeter', detail: 'Liquid-argon calorimetry measures electromagnetic showers.', purpose: 'Measure energy deposited by electrons and photons as they initiate electromagnetic showers.', readout: 'ATLAS reference only. No calorimeter energy deposits are included in the bundled CSV.' },
+      { id: 'hadronic', name: 'Hadronic calorimeter', detail: 'Tile and liquid-argon systems sample hadronic showers.', purpose: 'Sample energy from hadronic showers produced by particles such as protons, neutrons, and charged hadrons.', readout: 'ATLAS reference only. No hadronic calorimeter measurements are loaded.' },
+      { id: 'muon', name: 'Muon spectrometer', detail: 'Large outer tracking chambers measure muons.', purpose: 'Measure muon trajectories in the outer detector and provide independent information for muon reconstruction.', readout: 'ATLAS reference only. The bundled sample contains CMS muon records, not ATLAS chamber data.' },
+      { id: 'magnets', name: 'Magnet system', detail: 'Solenoid and toroidal magnets bend charged-particle trajectories.', purpose: 'Magnetic fields curve charged tracks; track curvature is one input to momentum and charge reconstruction.', readout: 'Reference description only. This interface does not load an ATLAS field measurement.' },
     ],
   },
   CMS: {
     name: 'CMS',
     description: 'A general-purpose experiment with a silicon tracker, crystal electromagnetic calorimeter, hadron calorimeter, and muon detectors inside and outside a solenoid.',
     components: [
-      { id: 'tracking', name: 'Silicon tracker', detail: 'Pixel and strip tracking reconstruct charged-particle trajectories.' },
-      { id: 'electromagnetic', name: 'Electromagnetic calorimeter (ECAL)', detail: 'Lead-tungstate crystals measure electromagnetic showers.' },
-      { id: 'hadronic', name: 'Hadron calorimeter (HCAL)', detail: 'Sampling calorimetry measures hadronic shower energy.' },
-      { id: 'muon', name: 'Muon system', detail: 'Drift tubes, cathode-strip chambers, and resistive-plate chambers identify muons.' },
-      { id: 'magnets', name: 'Solenoid magnet', detail: 'The 3.8 T superconducting solenoid bends charged tracks within the detector.' },
+      { id: 'tracking', name: 'Silicon tracker', detail: 'Pixel and strip tracking reconstruct charged-particle trajectories.', purpose: 'Track charged particles close to the interaction point. In a magnetic field, track curvature is used to infer momentum and charge.', readout: 'Recorded CMS muon-track quantities are available; raw pixel and strip hits are not in the bundled CSV.' },
+      { id: 'electromagnetic', name: 'Electromagnetic calorimeter (ECAL)', detail: 'Lead-tungstate crystals measure electromagnetic showers.', purpose: 'Measure energy from electrons and photons through the light produced in lead-tungstate crystals.', readout: 'No ECAL cell signals or energy deposits are included in the bundled CSV.' },
+      { id: 'hadronic', name: 'Hadron calorimeter (HCAL)', detail: 'Sampling calorimetry measures hadronic shower energy.', purpose: 'Sample the energy of hadronic showers in the calorimeter system.', readout: 'No HCAL cell signals or energy deposits are included in the bundled CSV.' },
+      { id: 'muon', name: 'Muon system', detail: 'Drift tubes, cathode-strip chambers, and resistive-plate chambers identify muons.', purpose: 'Detect penetrating muons in chambers outside the calorimeters and contribute to muon reconstruction.', readout: 'The CSV includes reconstructed muon categories, not raw chamber hits or a full chamber reconstruction.' },
+      { id: 'magnets', name: 'Solenoid magnet', detail: 'The 3.8 T superconducting solenoid bends charged tracks within the detector.', purpose: 'Provide the central magnetic field used with track curvature to estimate charged-particle momentum and sign.', readout: '3.8 T is a CMS reference value shown for context, not a field measurement attached to this event.' },
     ],
   },
 }
 
-function DetectorGeometry({ event }) {
+function DetectorGeometry({ event, selectedDetector }) {
   const layers = [
     { id: 'tracking', label: 'PIXEL + STRIP TRACKER', radius: 32, color: '#59d7cd' },
     { id: 'electromagnetic', label: 'ECAL / CRYSTALS', radius: 54, color: '#f0b36d' },
     { id: 'hadronic', label: 'HCAL / SAMPLING', radius: 72, color: '#d58cff' },
     { id: 'muon', label: 'MUON CHAMBERS', radius: 98, color: '#8fb8ff' },
   ]
-  const particles = (event?.particles ?? []).filter((particle) => particle.charge !== 0 || ['Photon', 'Jet'].includes(particle.type))
-  const cells = event?.detectorResponse?.cells ?? []
-  const magneticField = event?.detectorResponse?.magneticFieldTesla ?? 3.8
-  const vertex = event?.reconstructedVertex
+  const cmsSelected = selectedDetector === 'CMS'
+  const particles = cmsSelected ? (event?.particles ?? []).filter((particle) => particle.charge !== 0 || ['Photon', 'Jet'].includes(particle.type)) : []
+  const cells = cmsSelected ? event?.detectorResponse?.cells ?? [] : []
+  const magneticField = cmsSelected ? event?.detectorResponse?.magneticFieldTesla ?? 3.8 : null
+  const vertex = cmsSelected ? event?.reconstructedVertex : null
   const vertexX = vertex?.available ? 400 + vertex.xMm * 0.1 : 400
   const vertexY = vertex?.available ? 130 - vertex.yMm * 0.1 : 130
 
   return (
     <section className="detector-geometry-panel">
-      <header><span className="section-kicker">DETECTOR GEOMETRY / EVENT RESPONSE</span><strong>BARREL + ENDCAP CROSS-SECTION</strong></header>
+      <header><span className="section-kicker">DETECTOR GEOMETRY / EVENT RESPONSE</span><strong>CMS-INSPIRED BARREL + ENDCAP / NOT TO SCALE</strong></header>
       <div className="detector-geometry-scroll">
         <svg viewBox="0 0 800 260" role="img" aria-label="Schematic CMS barrel and endcap detector geometry with event tracks and calorimeter cells">
           <path d="M190 130H610" className="detector-geometry-beamline" />
@@ -58,7 +59,9 @@ function DetectorGeometry({ event }) {
           <text x="360" y="24" className="detector-geometry-label">CMS-INSPIRED BARREL</text>
           <text x="204" y="246" className="detector-geometry-label">ENDCAP</text>
           <text x="548" y="246" className="detector-geometry-label">ENDCAP</text>
-          <circle cx={vertexX} cy={vertexY} r="3" className="detector-geometry-vertex" />
+          {vertex?.available
+            ? <circle cx={vertexX} cy={vertexY} r="3" className="detector-geometry-vertex"><title>Educational track-fit vertex estimate</title></circle>
+            : <text x="350" y="115" className="detector-geometry-no-vertex">VERTEX UNAVAILABLE</text>}
           {particles.map((particle, index) => {
             const pt = Math.max(particle.transverseMomentum ?? 0.1, 0.1)
             const bend = particle.charge
@@ -78,11 +81,13 @@ function DetectorGeometry({ event }) {
             const y = 130 + Math.sin(cell.phi) * radius
             return <rect key={cell.id} x={x - 3} y={y - 3} width="6" height="6" className={`detector-energy-cell ${cell.layerId}`}><title>{`${cell.layerId} cell · ${cell.energyGeV.toFixed(2)} GeV`}</title></rect>
           })}
-          <text x="20" y="232" className="detector-geometry-note">SOLENOID FIELD: {magneticField.toFixed(1)} T</text>
+          {magneticField != null && <text x="20" y="232" className="detector-geometry-note">FIELD: {magneticField.toFixed(1)} T {event?.detectorResponse?.magneticFieldTesla ? 'MODELED' : 'CMS REFERENCE'}</text>}
           <text x="20" y="247" className="detector-geometry-note">SCHEMATIC / NOT TO SCALE</text>
         </svg>
       </div>
-      <p>Charged-track curvature and calorimeter-cell deposits are educational response-model outputs for data-informed simulations. The model starts from resampled recorded CMS dimuon reconstructions; it does not produce detector measurements or a full collision simulation.</p>
+      <p>{selectedDetector === 'ATLAS'
+        ? 'No ATLAS event data or ATLAS geometry is bundled. The schematic above is explicitly CMS-inspired and is shown only as a general detector-layer illustration; it is not an ATLAS drawing.'
+        : 'Charged-track curvature and calorimeter-cell deposits are educational response-model outputs for data-informed simulations. Recorded CMS events show reconstructed tracks only; their unavailable vertex is not marked as measured. The model does not produce detector measurements or a full collision simulation.'}</p>
     </section>
   )
 }
@@ -95,6 +100,10 @@ function layerMeasurement(component, response, event, selectedDetector) {
       value: selectedDetector === 'CMS' ? '3.8 T reference' : 'ATLAS field system',
       detail: 'Reference description only; magnetic field values are not measured by this event view.',
     }
+  }
+
+  if (selectedDetector === 'ATLAS') {
+    return { status: 'ATLAS REFERENCE ONLY', value: 'Unavailable', detail: 'The app does not load or generate ATLAS event-response measurements.' }
   }
 
   const layer = response.find((item) => item.id === component.id)
@@ -129,11 +138,12 @@ export default function DetectorView({ simulation }) {
     () => event?.detectorResponse?.layers ?? buildDetectorResponse(event),
     [event],
   )
+  const detectorEvent = selectedDetector === 'CMS' ? event : null
   const detector = detectorSystems[selectedDetector]
   const isCernEvent = event?.dataOrigin === 'CERN Open Data'
-  const measurementsAvailable = isCernEvent
-    ? selectedDetector === 'CMS' ? response.filter((layer) => layer.available).length : 0
-    : event ? response.length : 0
+  const measurementsAvailable = selectedDetector === 'CMS'
+    ? isCernEvent ? response.filter((layer) => layer.available).length : event ? response.length : 0
+    : 0
 
   return (
     <div className="detector-view">
@@ -145,7 +155,7 @@ export default function DetectorView({ simulation }) {
         </div>
         <label className="detector-event-select">
           <span>EVENT</span>
-          <select value={eventId ?? ''} onChange={(input) => setEventId(input.target.value ? Number(input.target.value) : null)}>
+          <select value={eventId ?? ''} onChange={(input) => setEventId(input.target.value || null)}>
             <option value="">LATEST EVENT</option>
             {simulation.eventHistory.slice().reverse().map((historyEvent) => (
               <option value={historyEvent.id} key={historyEvent.id}>{historyEvent.label}</option>
@@ -182,24 +192,26 @@ export default function DetectorView({ simulation }) {
           </div>
         </div>
 
-        <DetectorGeometry event={event} />
+        <DetectorGeometry event={detectorEvent} selectedDetector={selectedDetector} />
 
         <section className="detector-vertex-panel">
           <div>
             <span className="section-kicker">TRACK RECONSTRUCTION / PRIMARY VERTEX</span>
-            <h4>{event?.reconstructedVertex?.available ? 'Educational track-fit estimate' : 'Vertex unavailable from this event'}</h4>
-            <p>{event?.reconstructedVertex?.available
-              ? `${event.reconstructedVertex.method}. Impact-parameter measurements are generated by the local response model and are not present in the recorded CMS file.`
-              : isCernEvent
+            <h4>{detectorEvent?.reconstructedVertex?.available ? 'Educational track-fit estimate' : 'Vertex unavailable from this event'}</h4>
+            <p>{selectedDetector === 'ATLAS'
+              ? 'The current event stream is based on CMS records or CMS-inspired simulation. No ATLAS event tracks or vertex measurements are loaded.'
+              : detectorEvent?.reconstructedVertex?.available
+                ? `${detectorEvent.reconstructedVertex.method}. Impact-parameter measurements are generated by the local response model and are not present in the recorded CMS file.`
+                : isCernEvent
                 ? 'The bundled CMS reference contains reconstructed muon momenta, not per-track impact parameters or raw hits, so this interface does not infer a vertex from those records.'
                 : 'At least two reconstructed charged tracks with modeled impact-parameter measurements are needed for this educational fit.'}</p>
           </div>
-          {event?.reconstructedVertex?.available && (
+          {detectorEvent?.reconstructedVertex?.available && (
             <div className="detector-vertex-readings">
-              <span>X<strong>{event.reconstructedVertex.xMm.toFixed(4)} mm</strong></span>
-              <span>Y<strong>{event.reconstructedVertex.yMm.toFixed(4)} mm</strong></span>
-              <span>Z<strong>{event.reconstructedVertex.zMm.toFixed(2)} mm</strong></span>
-              <span>TRACKS / Z RESOLUTION<strong>{event.reconstructedVertex.tracksUsed} / ±{event.reconstructedVertex.resolutionMm.longitudinal.toFixed(1)} mm</strong></span>
+              <span>X<strong>{detectorEvent.reconstructedVertex.xMm.toFixed(4)} mm</strong></span>
+              <span>Y<strong>{detectorEvent.reconstructedVertex.yMm.toFixed(4)} mm</strong></span>
+              <span>Z<strong>{detectorEvent.reconstructedVertex.zMm.toFixed(2)} mm</strong></span>
+              <span>TRACKS / Z RESOLUTION<strong>{detectorEvent.reconstructedVertex.tracksUsed} / ±{detectorEvent.reconstructedVertex.resolutionMm.longitudinal.toFixed(1)} mm</strong></span>
             </div>
           )}
         </section>
@@ -216,6 +228,10 @@ export default function DetectorView({ simulation }) {
                   <span className="section-kicker">SUBSYSTEM / {String(index + 1).padStart(2, '0')}</span>
                   <h5>{component.name}</h5>
                   <p>{component.detail}</p>
+                  <div className="detector-subsystem-details">
+                    <strong>FUNCTION</strong><span>{component.purpose}</span>
+                    <strong>EVENT DATA</strong><span>{component.readout}</span>
+                  </div>
                   <div className="detector-measurement">
                     <span>{measurement.status}</span>
                     <strong>{measurement.value}</strong>

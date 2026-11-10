@@ -58,6 +58,7 @@ function App() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
   const notifiedIncidentId = useRef(null);
+  const notifiedCollisionHistoryError = useRef(null);
     const [analysisEventId, setAnalysisEventId] = useState(null);
   const addNotification = useCallback((title, message, type = "info") => {
     setNotifications((current) =>
@@ -93,6 +94,16 @@ function App() {
     const type = incident.severity === "CRITICAL" ? "error" : incident.severity === "FAULT" ? "warning" : "info";
     addNotification(`${incident.severity}: ${incident.name}`, incident.description, type);
   }, [simulation.incident, addNotification]);
+  useEffect(() => {
+    const error = simulation.collisionHistoryError;
+    if (!error) {
+      notifiedCollisionHistoryError.current = null;
+      return;
+    }
+    if (notifiedCollisionHistoryError.current === error) return;
+    notifiedCollisionHistoryError.current = error;
+    addNotification("COLLISION HISTORY NOT SAVED", error, "error");
+  }, [simulation.collisionHistoryError, addNotification]);
     useEffect(() => { const openEvent = (event) => { setAnalysisEventId(event.detail); setActiveView("Event Display"); }; window.addEventListener("open-event-display", openEvent); return () => window.removeEventListener("open-event-display", openEvent); }, []);
   useEffect(() => {
     const handleKey = (event) => {

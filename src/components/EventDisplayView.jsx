@@ -3,6 +3,7 @@ import { buildDetectorResponse } from '../detector/model'
 import { classifyCollisionPriority, collisionPriorities, priorityDetails, rankAgainstReviewedEvents } from '../collision/classification'
 import { getCollisionRecordId, loadSavedCollisionEvents, reviewSavedCollision, saveCollisionEvent } from '../collision/storage'
 import DetectorCanvas from './DetectorCanvas'
+import './event-display.css'
 
 const defaultDisplay = { showTracks: true, showEnergy: true, showLabels: true, showLayers: true, showParticleIds: true }
 
@@ -36,6 +37,31 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
   const currentEvent = cleared ? null : simulation.eventHistory.find((event) => event.id === eventId) ?? simulation.latestCollision
   const response = useMemo(() => buildDetectorResponse(currentEvent), [currentEvent])
   const classification = useMemo(() => classifyCollisionPriority(currentEvent), [currentEvent])
+  const pairKinematics = useMemo(() => {
+    const muons = currentEvent?.particles.filter((particle) => particle.type === 'Muon') ?? []
+    if (muons.length !== 2) return { muons, transverseMomentum: null, deltaPhi: null, deltaR: null }
+
+    const [first, second] = muons
+    const componentsAvailable = [first.px, first.py, second.px, second.py].every(Number.isFinite)
+    let deltaPhi = null
+    let deltaR = null
+    if (Number.isFinite(first.direction) && Number.isFinite(second.direction)) {
+      deltaPhi = Math.abs(first.direction - second.direction)
+      if (deltaPhi > Math.PI) deltaPhi = 2 * Math.PI - deltaPhi
+      if (Number.isFinite(first.pseudorapidity) && Number.isFinite(second.pseudorapidity)) {
+        deltaR = Math.hypot(first.pseudorapidity - second.pseudorapidity, deltaPhi)
+      }
+    }
+
+    return {
+      muons,
+      transverseMomentum: componentsAvailable
+        ? Math.hypot(first.px + second.px, first.py + second.py)
+        : null,
+      deltaPhi,
+      deltaR,
+    }
+  }, [currentEvent])
   const learnedRanking = useMemo(() => rankAgainstReviewedEvents(currentEvent, savedEvents), [currentEvent, savedEvents])
   const savedRecord = currentEvent ? savedEvents.find((record) => record.recordId === getCollisionRecordId(currentEvent)) : null
   const reviewedCountSummary = Object.entries(learnedRanking.counts).map(([priority, count]) => `${priority}: ${count}`).join(' · ')
@@ -204,11 +230,12 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
                 <dt>ENERGY</dt><dd>{selectedParticle.energy.toFixed(3)} GeV</dd>
                 <dt>DIRECTION</dt><dd>{directionLabel(selectedParticle.direction)}</dd>
                 <dt>MOMENTUM</dt><dd>{selectedParticle.momentum.toFixed(3)} GeV/c</dd>
-                {currentEvent?.dataOrigin === 'CERN Open Data' && <>
+                {[selectedParticle.px, selectedParticle.py, selectedParticle.pz].every(Number.isFinite) && <>
+                  <dt>MOMENTUM COMPONENTS</dt><dd>px {selectedParticle.px.toFixed(3)} · py {selectedParticle.py.toFixed(3)} · pz {selectedParticle.pz.toFixed(3)} GeV/c</dd>
                   <dt>TRANSVERSE MOMENTUM</dt><dd>{selectedParticle.transverseMomentum.toFixed(3)} GeV/c</dd>
                   <dt>PSEUDORAPIDITY</dt><dd>{selectedParticle.pseudorapidity.toFixed(5)}</dd>
-                  <dt>TRACK TYPE</dt><dd>CMS {selectedParticle.muonTrackType}</dd>
                 </>}
+                {selectedParticle.muonTrackType && <><dt>TRACK TYPE</dt><dd>CMS {selectedParticle.muonTrackType}</dd></>}
                 <dt>LIFETIME</dt><dd>{selectedParticle.lifetime == null ? 'Not in source CSV' : `${selectedParticle.lifetime.toFixed(2)} ns`}</dd>
                 <dt>DETECTOR RESPONSE</dt><dd>{detectedLayers}</dd>
               </dl>
@@ -232,11 +259,31 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
             <span>SIMULATION TIMESTAMP</span><strong>{currentEvent ? `${currentEvent.time.toFixed(3)} ns` : '—'}</strong>
             <span>MODEL SCORE</span><strong className="score">{currentEvent?.interestingScore == null ? 'NOT IN SOURCE DATA' : `${currentEvent.interestingScore}/100`}</strong>
           </div>
+          {currentEvent && <section className="event-kinematics-card" aria-label="Event-level kinematics">
+            <h4>Event-level details</h4>
+            <p>{currentEvent.eventMode === 'RECORDED_CERN'
+              ? 'Recorded CMS reconstructed-track quantities.'
+              : 'Calculated from the resampled muon tracks; not a new CERN measurement.'}</p>
+            <div className="event-kinematics-metrics">
+              <span>MUON CANDIDATES<strong>{pairKinematics.muons.length}</strong></span>
+              <span>PAIR pT<strong>{pairKinematics.transverseMomentum == null ? 'Unavailable' : `${pairKinematics.transverseMomentum.toFixed(3)} GeV/c`}</strong></span>
+              <span>Δφ<strong>{pairKinematics.deltaPhi == null ? 'Unavailable' : `${pairKinematics.deltaPhi.toFixed(4)} rad`}</strong></span>
+              <span>ΔR<strong>{pairKinematics.deltaR == null ? 'Unavailable' : pairKinematics.deltaR.toFixed(4)}</strong></span>
+              <span>{currentEvent.eventMode === 'DATA_INFORMED_SIMULATION' ? 'MODELED MUON-ONLY IMBALANCE' : 'RECORDED MISSING pT'}<strong>{currentEvent.eventMode === 'DATA_INFORMED_SIMULATION' && Number.isFinite(currentEvent.missingTransverseMomentumGeV) ? `${currentEvent.missingTransverseMomentumGeV.toFixed(3)} GeV/c` : 'Not in source data'}</strong></span>
+              <span>VERTEX<strong>{currentEvent.reconstructedVertex?.available ? 'Modeled track fit' : 'Unavailable'}</strong></span>
+            </div>
+            {pairKinematics.muons.length > 0 && <div className="event-muon-summary">
+              {pairKinematics.muons.map((muon, index) => (
+                <span key={muon.id}>MUON {index + 1} · Q {muon.charge > 0 ? `+${muon.charge}` : muon.charge} · pT {Number.isFinite(muon.transverseMomentum) ? `${muon.transverseMomentum.toFixed(3)} GeV/c` : 'unavailable'} · η {Number.isFinite(muon.pseudorapidity) ? muon.pseudorapidity.toFixed(4) : 'unavailable'}</span>
+              ))}
+            </div>}
+            <small>Pair pT is the vector sum of the displayed muon transverse momenta. It is not full-event missing transverse momentum.</small>
+          </section>}
         </aside>
       </div>
       <div className="event-history-panel">
         <div className="history-panel-header">
-          <div><span className="section-kicker">ARCHIVE / COLLISION RECORDS</span><h4>Event History</h4></div>
+          <div><span className="section-kicker">ARCHIVE / COLLISION RECORDS</span><h4>Event History</h4><p>{simulation.collisions} total collisions · latest {simulation.eventHistory.length} retained in this browser</p></div>
           <input value={query} onChange={(input) => setQuery(input.target.value)} placeholder="Search events, particles..." aria-label="Search events" />
         </div>
         <div className="event-history-table">

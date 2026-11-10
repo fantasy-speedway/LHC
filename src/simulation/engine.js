@@ -6,6 +6,7 @@ import { chooseRunningIncident, chooseStartupFailure, createIncident } from './i
 import { calculateBeamDiagnostics, calculateRfRampEnergyGeV } from '../physics/beam-physics'
 import { advanceProcessedEventCounter } from './event-counter'
 import { simulateDetectorResponse } from '../detector/response'
+import { loadCollisionHistory, saveCollisionHistory } from './collision-history'
 
 const defaultBeam = {
   particleType: 'proton',
@@ -92,6 +93,7 @@ const initialState = {
   collisions: 0,
   detectedParticles: 0,
   averageEventEnergy: 0,
+  collisionHistoryError: null,
   collisionRate: 0,
   eventHistory: [],
   latestCollision: null,
@@ -104,7 +106,25 @@ const initialState = {
 }
 
 export function createSimulationEngine() {
-  let state = { ...initialState }
+  let restoredHistory
+  let historyLoadError = null
+  try {
+    restoredHistory = loadCollisionHistory()
+  } catch (error) {
+    restoredHistory = { collisions: 0, detectedParticles: 0, averageEventEnergy: 0, events: [] }
+    historyLoadError = error instanceof Error ? error.message : String(error)
+  }
+  const sessionId = globalThis.crypto?.randomUUID?.()
+    ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  let state = {
+    ...initialState,
+    collisions: restoredHistory.collisions,
+    detectedParticles: restoredHistory.detectedParticles,
+    averageEventEnergy: restoredHistory.averageEventEnergy,
+    eventHistory: restoredHistory.events,
+    latestCollision: restoredHistory.events.at(-1) ?? null,
+    collisionHistoryError: historyLoadError,
+  }
   let frame = null
   let transition = null
   let procedureInterval = null
@@ -309,18 +329,36 @@ export function createSimulationEngine() {
         fault.system === 'Detector' && ['ACTIVE', 'RECOVERING'].includes(fault.status)).length
       const detectorEfficiency = Math.max(0, environment.detector.efficiency - activeDetectorFaults * 8) / 100
         * Math.max(0, Math.min(1, environment.cooling.efficiency / 100))
-      const collisionWithContext = simulateDetectorResponse(collision, {
-        detectorEfficiency,
-        magneticFieldTesla: 3.8,
-        seed: collision.id,
-      })
+      const collisionWithContext = {
+        ...simulateDetectorResponse(collision, {
+          detectorEfficiency,
+          magneticFieldTesla: 3.8,
+          seed: collision.id,
+        }),
+        id: `sim-${sessionId}-${state.collisions + 1}`,
+        simulationSessionId: sessionId,
+      }
       const eventHistory = [...state.eventHistory, collisionWithContext].slice(-18)
       const collisions = state.collisions + 1
+      const detectedParticles = state.detectedParticles + collisionWithContext.detectedParticles
+      const averageEventEnergy = ((state.averageEventEnergy * state.collisions) + collisionWithContext.totalEnergy) / collisions
+      let collisionHistoryError = null
+      try {
+        saveCollisionHistory({
+          collisions,
+          detectedParticles,
+          averageEventEnergy,
+          events: eventHistory,
+        })
+      } catch (error) {
+        collisionHistoryError = error instanceof Error ? error.message : String(error)
+      }
       nextState = {
         ...nextState,
         collisions,
-        detectedParticles: state.detectedParticles + collisionWithContext.detectedParticles,
-        averageEventEnergy: ((state.averageEventEnergy * state.collisions) + collisionWithContext.totalEnergy) / collisions,
+        detectedParticles,
+        averageEventEnergy,
+        collisionHistoryError,
         collisionRate: collisions / Math.max(nextTime, 0.1),
         eventHistory,
         latestCollision: collisionWithContext,

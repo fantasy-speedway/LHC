@@ -19,62 +19,45 @@ export default function HelpView({ onNavigate = () => {} }) {
       </header>
 
       <nav className="help-contents" aria-label="Help page contents">
-        <strong>JUMP TO</strong>
-        <a href="#first-visit">Start here</a>
-        <a href="#data-reading">How to read data</a>
-        <a href="#read-analysis">Read the analysis</a>
-        <a href="#read-events">Read an event</a>
-        <a href="#quick-start">Quick start</a>
-        <a href="#machine-physics">Machine physics</a>
-        <a href="#startup-guide">Start-up</a>
-        <a href="#incidents">Warnings and faults</a>
-        <a href="#detectors">Detectors</a>
-        <a href="#measurements">Measurements</a>
-        <a href="#data-provenance">Data and limitations</a>
-        <a href="#event-priorities">Event priorities</a>
+        <strong>IN THIS GUIDE</strong>
+        <a href="#first-visit">Step-by-step guide</a>
+        <a href="#data-reading">How to read the data</a>
+        <a href="#detailed-reference">Detailed reference</a>
       </nav>
 
       <section className="help-page-card" id="first-visit">
         <div className="help-card-heading">
-          <div><span className="section-kicker">NEW HERE? CHOOSE A STARTING POINT</span><h4>You do not need to start the machine to learn from the recorded data</h4></div>
-          <span className="help-units">SUGGESTED FIRST VISIT</span>
+          <div><span className="section-kicker">NEW HERE? FOLLOW THESE STEPS IN ORDER</span><h4>Start with recorded data, then explore and save</h4></div>
+          <span className="help-units">NO START-UP REQUIRED</span>
         </div>
-        <p className="help-important-note"><strong>Important:</strong> The accelerator controls are an educational simulation. Recorded CMS measurements are available in Analysis independently of the simulated start-up sequence.</p>
-        <div className="help-route-grid">
-          <article>
-            <span className="help-route-number">01 / BEST FIRST STEP</span>
-            <h5>Explore real recorded measurements</h5>
-            <ol>
-              <li>Open <strong>Analysis</strong>.</li>
-              <li>In <strong>INPUT DATASET</strong>, choose <strong>CMS 2010 J/psi dimuon reference</strong>.</li>
-              <li>Change one cut at a time and watch the cutflow, mass histogram, and selected count update.</li>
-            </ol>
-            <p>This uses the 2,000-event CERN Open Data sample. It does not require starting the simulated collider.</p>
+        <p className="help-important-note"><strong>Important:</strong> These are recorded CMS measurements from a specific 2010 J/ψ→μ⁺μ⁻ dataset. The accelerator and detector interfaces are educational simulations, not live CERN systems.</p>
+        <ol className="help-walkthrough">
+          <li>
+            <span className="help-route-number">STEP 1</span>
+            <div><h5>Open the recorded dataset</h5><p>Go to <strong>Analysis</strong> and select <strong>CMS 2010 J/ψ dimuon reference</strong> under INPUT DATASET. You can do this without starting the simulated collider.</p></div>
             <button type="button" onClick={() => onNavigate('Analysis')}>OPEN ANALYSIS</button>
-          </article>
-          <article>
-            <span className="help-route-number">02 / WATCH THE SIMULATION</span>
-            <h5>Run a modeled fill</h5>
-            <ol>
-              <li>Open <strong>Overview</strong> and follow the operator controls in order.</li>
-              <li>Wait for each timed step; resolve any warning before continuing.</li>
-              <li>When collisions are active, inspect the event in <strong>Collision</strong> or <strong>Event Display</strong>.</li>
-            </ol>
-            <p>Each simulated event resamples a recorded CMS template and adds modeled detector response. It is not a new CERN measurement.</p>
-            <button type="button" onClick={() => onNavigate('Overview')}>OPEN OVERVIEW</button>
-          </article>
-          <article>
-            <span className="help-route-number">03 / SAVE YOUR RESEARCH</span>
-            <h5>Keep notes and results</h5>
-            <ol>
-              <li>Save interesting events from <strong>Event Display</strong>.</li>
-              <li>Save an analysis report and optionally link it to a project.</li>
-              <li>Use <strong>Data</strong> to organize notes, collections, and export a backup.</li>
-            </ol>
-            <p>Research records stay in this browser profile; export an archive to move or back them up.</p>
+          </li>
+          <li>
+            <span className="help-route-number">STEP 2</span>
+            <div><h5>Read the selection and plot</h5><p>Check how many events pass each cut, then look at the dimuon mass histogram. Change one selection at a time and observe how the counts change.</p></div>
+            <a href="#data-reading">HOW TO READ THE DATA</a>
+          </li>
+          <li>
+            <span className="help-route-number">STEP 3</span>
+            <div><h5>Inspect an event</h5><p>Open Event Display to review an event and its source label. A visualized or resampled event is not a new CERN measurement.</p></div>
+            <button type="button" onClick={() => onNavigate('Event Display')}>OPEN EVENT DISPLAY</button>
+          </li>
+          <li>
+            <span className="help-route-number">STEP 4</span>
+            <div><h5>Save your work</h5><p>The latest 18 generated collisions are retained in this browser automatically. Save important events or analysis reports, add research notes in Data, and export an archive for a backup or transfer.</p></div>
             <button type="button" onClick={() => onNavigate('Data')}>OPEN DATA &amp; RESEARCH</button>
-          </article>
-        </div>
+          </li>
+        </ol>
+        <details className="help-optional-simulation">
+          <summary>Want to explore the machine simulation too?</summary>
+          <p>Open Overview and follow the staged controls. These model the accelerator procedure and do not operate CERN equipment. Simulated events reuse recorded CMS event templates with modeled response; they are not new measured collisions.</p>
+          <button type="button" onClick={() => onNavigate('Overview')}>OPEN OVERVIEW</button>
+        </details>
       </section>
 
       <section className="help-page-card" id="data-reading">
@@ -103,14 +86,12 @@ export default function HelpView({ onNavigate = () => {} }) {
         <div className="help-important-note">
           <strong>When data is unavailable, it is not zero.</strong> The source CSV does not include several quantities such as collision energy, timestamps, raw detector hits, and recorded missing transverse momentum. If the interface says “unavailable” or “not in CSV,” it means that measurement was not supplied; do not infer a zero value.
         </div>
-        <div className="help-data-guide-links" aria-label="Detailed data-reading guides">
-          <a href="#read-analysis">Step-by-step Analysis and chart guide ↓</a>
-          <a href="#read-events">Event Display guide ↓</a>
-          <a href="#measurements">Measurement glossary ↓</a>
-          <a href="#data-provenance">Dataset source and limitations ↓</a>
-        </div>
+        <p>For more detail about analysis controls, event fields, detector models, and data limitations, expand <a href="#detailed-reference">Detailed reference</a> below.</p>
       </section>
 
+      <details className="help-reference" id="detailed-reference">
+        <summary>Detailed reference: analysis, machine, detectors, and data</summary>
+        <div className="help-reference-content">
       <section className="help-page-card" id="read-analysis">
         <div className="help-card-heading">
           <div><span className="section-kicker">ANALYSIS / WHAT TO LOOK AT</span><h4>A simple guide to the CMS dimuon analysis</h4></div>
@@ -165,6 +146,7 @@ export default function HelpView({ onNavigate = () => {} }) {
           <article>
             <h5>Use measurements in context</h5>
             <p>Energy (GeV) and momentum (GeV/c) are different quantities. pT is momentum perpendicular to the beam; η describes direction relative to the beam; φ is the angle around the beam axis; charge tells whether the muon is positive or negative. The glossary below explains each field in more detail.</p>
+            <p>Event-level pair pT is calculated from the displayed muon momentum components. Δφ is their wrapped azimuthal separation; ΔR combines their η and φ separations. Neither is missing transverse momentum. The source CSV does not provide missing transverse momentum or a fitted vertex.</p>
             <p>A missing or unavailable value means it was not supplied by the source or model—it should not be read as zero.</p>
           </article>
         </div>
@@ -234,7 +216,7 @@ export default function HelpView({ onNavigate = () => {} }) {
           <li><b>End of fill</b><span>Request the end of fill; the simulator stops collisions at the next event boundary, then explicitly extract beams to the modeled dump.</span></li>
         </ol>
         <p>Beam-channel configuration is handled separately on <strong>Beam Control</strong>. In standby or technical-stop, edit the Beam A or Beam B settings and press that channel’s LOAD CONFIGURATION pushbutton; each channel loads independently over a five-second simulated transition. Settings are interlocked during startup and operation. Injection, RF, energy ramping, and beam alignment still use the staged Overview controls.</p>
-        <p>For a quicker demonstration, the small <strong>Already familiar? Skip timed setup</strong> link beneath the Overview start-up instructions bypasses the staged controls and starts the local collision replay. It is available only when no startup action or fault is in progress. The model still limits beam energy according to the configured dipole field, and the CMS event templates are not changed or turned into new CERN measurements.</p>
+        <p>For a quicker demonstration, open the subtle <strong>Optional quick start</strong> disclosure beneath the Overview procedure. Its skip control bypasses the staged sequence and starts the local collision replay. It is available only when no startup action or fault is in progress. The model still limits beam energy according to the configured dipole field, and the CMS event templates are not changed or turned into new CERN measurements.</p>
         <p>The operator panel exposes individual pushbuttons, latched switches, readiness indicators, and timed accelerated gauges rather than a generic “next stage” command. Switching off a completed control resets dependent later steps; reverse the procedure before disabling upstream equipment. Displayed seconds are deliberately compressed and do not represent actual LHC timings: real commissioning, machine protection, cryogenics, beam transfer, detector coordination, and approvals require dedicated CERN systems and qualified operators. The listed 13.6 TeV Run 3 energy is a reference only; beam controls drive an educational machine model, while resampled event kinematics remain those of their recorded CMS templates. This app has no CERN connection and cannot operate hardware.</p>
         <div className="help-source-links">
           <a href={acceleratorComplex} target="_blank" rel="noreferrer">CERN ACCELERATOR COMPLEX ↗</a>
@@ -328,7 +310,7 @@ export default function HelpView({ onNavigate = () => {} }) {
           <div><span className="section-kicker">DETECTOR / EXPERIMENT SELECTOR</span><h4>ATLAS and CMS are separate experiments</h4></div>
           <span className="help-units">INDIVIDUAL SUBSYSTEM VIEWS</span>
         </div>
-        <p>Choose ATLAS or CMS on the Detector page to inspect that experiment’s tracking, calorimeter, muon, and magnet systems individually. Their detector designs are not interchangeable. The bundled event sample contains CMS reconstructed dimuon records only, so ATLAS is presented as a reference and has no event measurements loaded. CMS calorimeter deposits and raw detector hits are also absent from the bundled CSV.</p>
+        <p>Choose ATLAS or CMS on the Detector page to inspect each experiment’s tracking, calorimeter, muon, and magnet systems, including what each subsystem measures and which event data is available. Their detector designs are not interchangeable. The bundled event sample contains CMS reconstructed dimuon records only, so ATLAS is presented as a reference and has no event measurements loaded. The cross-section drawing is explicitly CMS-inspired, schematic, and not to scale; it is not an ATLAS geometry model. CMS calorimeter deposits and raw detector hits are also absent from the bundled CSV.</p>
         <div className="help-source-links">
           <a href="https://atlas.cern/Discover/Detector" target="_blank" rel="noreferrer">ATLAS DETECTOR ↗</a>
           <a href="https://cms.cern/detector" target="_blank" rel="noreferrer">CMS DETECTOR ↗</a>
@@ -391,6 +373,8 @@ export default function HelpView({ onNavigate = () => {} }) {
         <span className="section-kicker">KEYBOARD SHORTCUTS</span>
         <p><kbd>F</kbd> fullscreen · <kbd>?</kbd> open quick help · <kbd>1–4</kbd> Overview, Detector, Event Display, Experiments. Use the staged operator panel for collider start-up and end-of-fill.</p>
       </section>
+        </div>
+      </details>
     </div>
   )
 }

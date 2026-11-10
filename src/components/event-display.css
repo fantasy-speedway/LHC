@@ -1,0 +1,64 @@
+.event-kinematics-card {
+  border: 1px solid var(--line);
+  background: #091419;
+  margin-top: 14px;
+  padding: 11px;
+}
+
+.event-kinematics-card h4 {
+  color: var(--ink);
+  font-size: 16px;
+  margin: 0 0 5px;
+}
+
+.event-kinematics-card > p,
+.event-kinematics-card > small {
+  color: #b7c5c2;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.event-kinematics-card > p { margin: 0 0 10px; }
+.event-kinematics-card > small { display: block; margin-top: 9px; }
+
+.event-kinematics-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.event-kinematics-metrics > span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.event-kinematics-metrics strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.event-muon-summary {
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid var(--line);
+  margin-top: 9px;
+  padding-top: 8px;
+}
+
+.event-muon-summary span,
+.history-panel-header > div > p {
+  color: #b7c5c2;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .event-kinematics-card { padding: 10px; }
+  .event-kinematics-metrics { gap: 10px 7px; }
+}
