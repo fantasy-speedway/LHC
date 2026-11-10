@@ -27,6 +27,7 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
   const [zoom, setZoom] = useState(1)
   const [animationTime, setAnimationTime] = useState(2.6)
   const [playing, setPlaying] = useState(false)
+  const [playbackRun, setPlaybackRun] = useState(0)
   const [query, setQuery] = useState('')
   const [savedArchive, setSavedArchive] = useState(readSavedCollisionArchive)
   const [reviewSelection, setReviewSelection] = useState(null)
@@ -58,11 +59,13 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
   }
   const previous = () => { if (eventIndex > 0) selectEvent(simulation.eventHistory[eventIndex - 1].id) }
   const next = () => { if (eventIndex >= 0 && eventIndex < simulation.eventHistory.length - 1) selectEvent(simulation.eventHistory[eventIndex + 1].id) }
-  const replay = () => {
+  const play = () => {
     if (!currentEvent) return
     setAnimationTime(0)
+    setPlaybackRun((run) => run + 1)
     setPlaying(true)
   }
+  const replay = play
   const random = () => {
     if (simulation.eventHistory.length) {
       selectEvent(simulation.eventHistory[Math.floor(Math.random() * simulation.eventHistory.length)].id)
@@ -102,23 +105,20 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
   useEffect(() => {
     if (!playing) return undefined
     let frame
-    let previousTime
+    let startedAt
     const tick = (timestamp) => {
-      if (!previousTime) previousTime = timestamp
-      setAnimationTime((current) => {
-        const nextTime = current + (timestamp - previousTime) / 1000
-        if (nextTime >= 2.6) {
-          setPlaying(false)
-          return 2.6
-        }
-        return nextTime
-      })
-      previousTime = timestamp
+      if (startedAt === undefined) startedAt = timestamp
+      const elapsed = Math.min(2.6, (timestamp - startedAt) / 1000)
+      setAnimationTime(elapsed)
+      if (elapsed >= 2.6) {
+        setPlaying(false)
+        return
+      }
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [playing])
+  }, [playbackRun, playing])
 
   const filteredHistory = simulation.eventHistory.slice().reverse().filter((event) =>
     `${event.label} ${event.sourceParticle} ${event.particles.map((particle) => particle.type).join(' ')}`
@@ -167,7 +167,7 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
             <div className="event-display-controls">
               <button onClick={previous} disabled={eventIndex <= 0} title="Previous event" aria-label="Previous event">◀</button>
               <button onClick={next} disabled={eventIndex < 0 || eventIndex >= simulation.eventHistory.length - 1} title="Next event" aria-label="Next event">▶</button>
-              <button onClick={() => setPlaying(true)} disabled={!currentEvent || playing} title="Play event" aria-label="Play event">▶ PLAY</button>
+              <button onClick={play} disabled={!currentEvent || playing} title="Play event" aria-label="Play event">▶ PLAY</button>
               <button onClick={() => setPlaying(false)} disabled={!playing} title="Pause event" aria-label="Pause event">Ⅱ PAUSE</button>
               <button onClick={replay} disabled={!currentEvent} title="Replay event" aria-label="Replay event">↻ REPLAY</button>
               <button onClick={random} disabled={!simulation.eventHistory.length} title="Load a random event" aria-label="Random event">⤨ RANDOM</button>
