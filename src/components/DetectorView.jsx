@@ -122,7 +122,10 @@ export default function DetectorView({ simulation }) {
   const [selectedDetector, setSelectedDetector] = useState('CMS')
   const [eventId, setEventId] = useState(null)
   const event = simulation.eventHistory.find((item) => item.id === eventId) ?? simulation.latestCollision
-  const response = useMemo(() => buildDetectorResponse(event), [event])
+  const response = useMemo(
+    () => event?.detectorResponse?.layers ?? buildDetectorResponse(event),
+    [event],
+  )
   const detector = detectorSystems[selectedDetector]
   const isCernEvent = event?.dataOrigin === 'CERN Open Data'
   const measurementsAvailable = isCernEvent

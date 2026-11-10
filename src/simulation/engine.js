@@ -3,7 +3,7 @@ import { createCollisionEvent } from '../collision/engine'
 import { environmentDefaults } from '../environment/systems'
 import { createStartupSystems, startupProcedure } from './startup-procedure'
 import { chooseRunningIncident, chooseStartupFailure, createIncident } from './incidents'
-import { calculateBeamDiagnostics } from '../physics/beam-physics'
+import { calculateBeamDiagnostics, calculateRfAccelerationFraction } from '../physics/beam-physics'
 import { simulateDetectorResponse } from '../detector/response'
 
 const defaultBeam = {
@@ -496,11 +496,10 @@ export function createSimulationEngine() {
       const nextStep = startupProcedure[nextStepIndex]
       const isStartingCollisions = step.id === 'start-collisions'
       const nextCompletedSteps = [...completedSteps, step.id]
-      const rfAccelerationFraction = Math.max(0, Math.min(1, state.beam.rfVoltageMV / 16))
       const beamUpdates = step.id === 'beam-ramp'
         ? setBeamEnergies(
-          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * rfAccelerationFraction,
-          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * rfAccelerationFraction,
+          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * calculateRfAccelerationFraction(state.beam.particleType, state.beam.rfVoltageMV),
+          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * calculateRfAccelerationFraction(state.beam.particleTypeB, state.beam.rfVoltageMV),
         )
         : {}
 
@@ -565,10 +564,11 @@ export function createSimulationEngine() {
         progressSystems.quadrupoleProgress = progress * 100
       } else if (step.id === 'beam-ramp') {
         progressSystems.beamRampProgress = progress * 100
-        const accelerationProgress = Math.max(0, Math.min(1, progress * state.beam.rfVoltageMV / 16))
+        const accelerationProgressA = progress * calculateRfAccelerationFraction(state.beam.particleType, state.beam.rfVoltageMV)
+        const accelerationProgressB = progress * calculateRfAccelerationFraction(state.beam.particleTypeB, state.beam.rfVoltageMV)
         setState(setBeamEnergies(
-          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * accelerationProgress,
-          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * accelerationProgress,
+          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * accelerationProgressA,
+          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * accelerationProgressB,
         ))
       }
       setState({

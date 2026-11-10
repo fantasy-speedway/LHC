@@ -11,6 +11,8 @@ export const DEFAULT_BETA_STAR_M = 0.4
 export const DEFAULT_QUADRUPOLE_GRADIENT_T_M = 200
 export const LHC_NOMINAL_BUNCHES = 2808
 export const LHC_BUNCH_SPACING_NS = 25
+export const LHC_CIRCUMFERENCE_M = 26_658.883
+export const REFERENCE_RF_RAMP_VOLTAGE_MV = 16
 
 const particleMassesGeV = {
   proton: PROTON_MASS_GEV,
@@ -19,8 +21,19 @@ const particleMassesGeV = {
   muon: MUON_MASS_GEV,
 }
 
+const particleChargeNumbers = {
+  proton: 1,
+  electron: -1,
+  positron: 1,
+  muon: -1,
+}
+
 export function getParticleMassGeV(particleType) {
   return particleMassesGeV[particleType] ?? PROTON_MASS_GEV
+}
+
+export function getParticleChargeNumber(particleType) {
+  return particleChargeNumbers[particleType] ?? 1
 }
 
 export function momentumFromEnergyGeV(energyGeV, massGeV) {
@@ -33,14 +46,16 @@ export function energyFromMomentumGeV(momentumGeV, massGeV) {
   return Math.hypot(momentumGeV, massGeV)
 }
 
-export function dipoleFieldForMomentumTesla(momentumGeV, bendingRadiusM = LHC_BENDING_RADIUS_M) {
-  if (!Number.isFinite(momentumGeV) || momentumGeV < 0 || !Number.isFinite(bendingRadiusM) || bendingRadiusM <= 0) return 0
-  return momentumGeV / (0.299792458 * bendingRadiusM)
+export function dipoleFieldForMomentumTesla(momentumGeV, bendingRadiusM = LHC_BENDING_RADIUS_M, chargeNumber = 1) {
+  if (!Number.isFinite(momentumGeV) || momentumGeV < 0 || !Number.isFinite(bendingRadiusM) || bendingRadiusM <= 0
+    || !Number.isFinite(chargeNumber) || chargeNumber === 0) return 0
+  return momentumGeV / (0.299792458 * bendingRadiusM * Math.abs(chargeNumber))
 }
 
-export function momentumFromDipoleFieldGeV(fieldTesla, bendingRadiusM = LHC_BENDING_RADIUS_M) {
-  if (!Number.isFinite(fieldTesla) || fieldTesla < 0 || !Number.isFinite(bendingRadiusM) || bendingRadiusM <= 0) return 0
-  return 0.299792458 * fieldTesla * bendingRadiusM
+export function momentumFromDipoleFieldGeV(fieldTesla, bendingRadiusM = LHC_BENDING_RADIUS_M, chargeNumber = 1) {
+  if (!Number.isFinite(fieldTesla) || fieldTesla < 0 || !Number.isFinite(bendingRadiusM) || bendingRadiusM <= 0
+    || !Number.isFinite(chargeNumber) || chargeNumber === 0) return 0
+  return 0.299792458 * fieldTesla * bendingRadiusM * Math.abs(chargeNumber)
 }
 
 function clamp(value, minimum, maximum) {
@@ -49,8 +64,9 @@ function clamp(value, minimum, maximum) {
 
 function beamKinematics({ particleType, targetEnergyGeV, initialEnergyGeV, fieldTesla }) {
   const massGeV = getParticleMassGeV(particleType)
+  const chargeNumber = getParticleChargeNumber(particleType)
   const targetMomentumGeV = momentumFromEnergyGeV(Math.max(targetEnergyGeV, massGeV), massGeV)
-  const fieldMomentumGeV = momentumFromDipoleFieldGeV(fieldTesla)
+  const fieldMomentumGeV = momentumFromDipoleFieldGeV(fieldTesla, LHC_BENDING_RADIUS_M, chargeNumber)
   const momentumGeV = Math.min(targetMomentumGeV, fieldMomentumGeV)
   const energyGeV = energyFromMomentumGeV(momentumGeV, massGeV)
   const requestedEnergyGeV = Math.max(initialEnergyGeV ?? massGeV, massGeV)
@@ -66,10 +82,21 @@ function beamKinematics({ particleType, targetEnergyGeV, initialEnergyGeV, field
     targetEnergyGeV,
     targetMomentumGeV,
     fieldMomentumGeV,
-    requiredFieldTesla: dipoleFieldForMomentumTesla(targetMomentumGeV),
+    magneticRigidityTm: actualMomentumGeV / (0.299792458 * chargeNumber),
+    requiredFieldTesla: dipoleFieldForMomentumTesla(targetMomentumGeV, LHC_BENDING_RADIUS_M, chargeNumber),
+    chargeNumber,
     fieldLimited: fieldMomentumGeV + 1e-9 < targetMomentumGeV,
     gamma,
   }
+}
+
+export function calculateRfAccelerationFraction(particleType, rfVoltageMV) {
+  if (!Number.isFinite(rfVoltageMV) || rfVoltageMV <= 0) return 0
+  return clamp(
+    Math.abs(getParticleChargeNumber(particleType)) * rfVoltageMV / REFERENCE_RF_RAMP_VOLTAGE_MV,
+    0,
+    1,
+  )
 }
 
 export function calculateBeamDiagnostics(beam, {
@@ -129,15 +156,19 @@ export function calculateBeamDiagnostics(beam, {
   const headOnProtonBeams = beam.particleType === 'proton' && beam.particleTypeB === 'proton' && oppositeDirections
   const bunchPopulationA = PROTON_BUNCH_POPULATION * clamp(beam.intensity / 100, 0, 1)
   const bunchPopulationB = PROTON_BUNCH_POPULATION * clamp(beam.intensityB / 100, 0, 1)
-  const numberOfBunches = clamp(Number.isFinite(beam.numberOfBunches) ? beam.numberOfBunches : 1, 1, LHC_NOMINAL_BUNCHES)
-  const bunchSpacingNs = Number.isFinite(beam.bunchSpacingNs) ? beam.bunchSpacingNs : LHC_BUNCH_SPACING_NS
+  const requestedNumberOfBunches = clamp(Number.isFinite(beam.numberOfBunches) ? beam.numberOfBunches : 1, 1, LHC_NOMINAL_BUNCHES)
+  const bunchSpacingNs = Number.isFinite(beam.bunchSpacingNs) ? Math.max(1, beam.bunchSpacingNs) : LHC_BUNCH_SPACING_NS
+  const bunchSlotsAvailable = Math.max(1, Math.floor(1 / (LHC_REVOLUTION_FREQUENCY_HZ * bunchSpacingNs * 1e-9)))
+  const numberOfBunches = Math.min(requestedNumberOfBunches, bunchSlotsAvailable)
   const orbitOffsetM = Math.abs(modeledOrbitOffsetMm) / 1000
   const overlapFactor = Math.exp(-(orbitOffsetM ** 2) / (2 * (beamSizeAM ** 2 + beamSizeBM ** 2)))
   const luminosityCm2S = headOnProtonBeams && beamSizeAM > 0 && beamSizeBM > 0
     ? LHC_REVOLUTION_FREQUENCY_HZ * numberOfBunches * bunchPopulationA * bunchPopulationB * overlapFactor
       / (2 * Math.PI * (beamSizeAM ** 2 + beamSizeBM ** 2)) / 1e4
     : null
-  const rfVoltageMV = Number.isFinite(beam.rfVoltageMV) ? clamp(beam.rfVoltageMV, 1, 32) : 16
+  const rfVoltageMV = Number.isFinite(beam.rfVoltageMV) ? clamp(beam.rfVoltageMV, 1, 32) : REFERENCE_RF_RAMP_VOLTAGE_MV
+  const rfAccelerationFractionA = calculateRfAccelerationFraction(beam.particleType, rfVoltageMV)
+  const rfAccelerationFractionB = calculateRfAccelerationFraction(beam.particleTypeB, rfVoltageMV)
 
   return {
     beamA: channelA,
@@ -157,8 +188,15 @@ export function calculateBeamDiagnostics(beam, {
     beamDivergenceBMrad,
     quadrupoleGradientTM,
     rfVoltageMV,
+    rfAccelerationFractionA,
+    rfAccelerationFractionB,
     bunchSpacingNs,
+    requestedNumberOfBunches,
+    bunchSlotsAvailable,
     numberOfBunches,
+    bunchPopulationA,
+    bunchPopulationB,
+    bunchCollisionFrequencyHz: LHC_REVOLUTION_FREQUENCY_HZ * numberOfBunches,
     orbitOffsetMm: modeledOrbitOffsetMm,
     orbitCorrectionNeeded: Math.abs(modeledOrbitOffsetMm) > 0.1 || fieldMismatchPercent > 5,
     stabilityPercent,
@@ -166,7 +204,10 @@ export function calculateBeamDiagnostics(beam, {
     luminosityAvailable: headOnProtonBeams,
     assumptions: {
       bendingRadiusM: LHC_BENDING_RADIUS_M,
+      circumferenceM: LHC_CIRCUMFERENCE_M,
       bunches: numberOfBunches,
+      requestedBunches: requestedNumberOfBunches,
+      bunchSlotsAvailable,
       bunchSpacingNs,
       nominalProtonBunchPopulation: PROTON_BUNCH_POPULATION,
       normalizedEmittanceUm: DEFAULT_NORMALIZED_EMITTANCE_UM,

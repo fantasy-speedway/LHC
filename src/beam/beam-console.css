@@ -181,12 +181,17 @@
 .beam-instrument-readings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .beam-console-lower > .console-bank { min-width: 0; min-height: 102px; }
+.beam-console-lower { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.beam-console-lower > .beam-diagnostic-bank:nth-child(1),
+.beam-console-lower > .beam-diagnostic-bank:nth-child(2) { grid-column: span 1; }
+.beam-console-lower > .beam-diagnostic-bank:nth-child(3) { grid-column: span 2; }
+.beam-console-lower > .beam-speed-bank { grid-column: span 2; }
 .beam-diagnostic-bank > header > small { color: #aeb8b3; }
 .beam-diagnostic-bank > .energy-graph { margin: 10px 4px 2px; }
 .beam-diagnostic-bank .energy-graph svg { height: 35px; }
 .beam-instrument-readings { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 9px 5px 3px; }
-.beam-instrument-readings > span { color: #b6c0bd; font: 5px 'IBM Plex Mono', monospace; }
-.beam-instrument-readings strong { display: block; color: #5de7a4; font-size: 7px; font-weight: 500; margin-top: 3px; }
+.beam-instrument-readings > span { min-width: 0; color: #b6c0bd; font: 7px/1.35 'IBM Plex Mono', monospace; overflow-wrap: anywhere; }
+.beam-instrument-readings strong { display: block; color: #5de7a4; font-size: 9px; font-weight: 500; margin-top: 3px; overflow-wrap: anywhere; }
 .beam-speed-bank .beam-speed-control { padding: 9px 5px 4px; }
 .beam-speed-bank .beam-speed-control > span { color: #b6c0bd; font: 5px 'IBM Plex Mono', monospace; }
 .beam-speed-bank .beam-speed-control > div { flex-wrap: wrap; gap: 3px; }
@@ -202,6 +207,8 @@
   .beam-console-main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .beam-status-screen { grid-column: 1 / -1; grid-row: 1; }
   .beam-console-lower { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .beam-console-lower > .beam-diagnostic-bank:nth-child(3) { grid-column: 1 / -1; }
+  .beam-console-lower > .beam-speed-bank { grid-column: 1 / -1; }
 }
 
 @media (max-width: 560px) {

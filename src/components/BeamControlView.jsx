@@ -146,7 +146,7 @@ function BeamStatusScreen({ simulation, beam }) {
       <div className="beam-field-setpoint">
         <span>DIPOLE FIELD / REQUIRED {draftDiagnostics.dipoleFieldRequiredTesla.toFixed(4)} T</span>
         <strong>{beam.dipoleFieldTesla.toFixed(4)} T <small>SIMULATED SETPOINT</small></strong>
-        <p>Field match {draftDiagnostics.fieldRatio.toFixed(3)}× · Relativistic rigidity: p [GeV/c] = 0.299792458 × B [T] × ρ [m], with ρ = {draftDiagnostics.assumptions.bendingRadiusM.toLocaleString()} m.</p>
+        <p>Field match {draftDiagnostics.fieldRatio.toFixed(3)}× · p [GeV/c] = 0.299792458 × |q/e| × B [T] × ρ [m]; q/e = {draftDiagnostics.beamA.chargeNumber} / {draftDiagnostics.beamB.chargeNumber}, ρ = {draftDiagnostics.assumptions.bendingRadiusM.toLocaleString()} m.</p>
       </div>
     </section>
   )
@@ -253,20 +253,25 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
           <BeamEnergyGraph history={simulation.energyHistoryB} />
         </section>
         <section className="console-bank beam-diagnostic-bank">
-          <header><span><b>05.</b> CIRCULATION METRICS</span><small>MODEL</small></header>
+          <header><span><b>05.</b> BEAM DIAGNOSTICS / MACHINE PHYSICS</span><small>LIVE MODEL ESTIMATES</small></header>
           <div className="beam-instrument-readings">
-            <span>REVOLUTIONS A<strong>{simulation.revolutions.toFixed(2)}</strong></span>
-            <span>REVOLUTIONS B<strong>{simulation.revolutionsB.toFixed(2)}</strong></span>
-            <span>DETECTOR ACTIVITY<strong>{Math.round(simulation.beamActivity * 100)}%</strong></span>
-            <span>DETECTED PARTICLES<strong>{simulation.detectedParticles.toLocaleString()}</strong></span>
+            <span>DIPOLE FIELD / REQUIRED A·B<strong>{simulation.beamDiagnostics.dipoleFieldTesla.toFixed(4)} / {simulation.beamDiagnostics.beamA.requiredFieldTesla.toFixed(4)} · {simulation.beamDiagnostics.beamB.requiredFieldTesla.toFixed(4)} T</strong></span>
+            <span>BEAM A · ENERGY / MOMENTUM<strong>{simulation.beamDiagnostics.beamA.energyGeV.toFixed(3)} GeV / {simulation.beamDiagnostics.beamA.momentumGeV.toFixed(3)} GeV/c</strong></span>
+            <span>BEAM B · ENERGY / MOMENTUM<strong>{simulation.beamDiagnostics.beamB.energyGeV.toFixed(3)} GeV / {simulation.beamDiagnostics.beamB.momentumGeV.toFixed(3)} GeV/c</strong></span>
+            <span>SIGNED MAGNETIC RIGIDITY A / B<strong>{simulation.beamDiagnostics.beamA.magneticRigidityTm.toFixed(3)} / {simulation.beamDiagnostics.beamB.magneticRigidityTm.toFixed(3)} T·m</strong></span>
+            <span>RF RAMP FRACTION A / B<strong>{(simulation.beamDiagnostics.rfAccelerationFractionA * 100).toFixed(0)}% / {(simulation.beamDiagnostics.rfAccelerationFractionB * 100).toFixed(0)}%</strong></span>
             <span>NORMALIZED EMITTANCE<strong>{simulation.beamDiagnostics.normalizedEmittanceUm.toFixed(2)} μm</strong></span>
-            <span>ORBIT OFFSET<strong>{simulation.beamDiagnostics.orbitOffsetMm.toFixed(3)} mm</strong></span>
-            <span>ORBIT CORRECTION<strong>{simulation.beamDiagnostics.orbitCorrectionNeeded ? 'CHECK REQUIRED' : 'WITHIN MODEL BAND'}</strong></span>
+            <span>GEOMETRIC EMITTANCE A / B<strong>{(simulation.beamDiagnostics.geometricEmittanceAM * 1e9).toFixed(3)} / {(simulation.beamDiagnostics.geometricEmittanceBM * 1e9).toFixed(3)} nm·rad</strong></span>
+            <span>TRANSVERSE SIZE A / B<strong>{(simulation.beamDiagnostics.beamSizeAM * 1e3).toFixed(3)} / {(simulation.beamDiagnostics.beamSizeBM * 1e3).toFixed(3)} mm</strong></span>
+            <span>DIVERGENCE A / B<strong>{(simulation.beamDiagnostics.beamDivergenceAMrad * 1e3).toFixed(3)} / {(simulation.beamDiagnostics.beamDivergenceBMrad * 1e3).toFixed(3)} mrad</strong></span>
+            <span>QUADRUPOLE / BETA*<strong>{simulation.beamDiagnostics.quadrupoleGradientTM.toFixed(1)} T/m / {simulation.beamDiagnostics.betaStarM.toFixed(3)} m</strong></span>
+            <span>BUNCH POPULATION A / B<strong>{simulation.beamDiagnostics.bunchPopulationA.toExponential(2)} / {simulation.beamDiagnostics.bunchPopulationB.toExponential(2)}</strong></span>
+            <span>BUNCH SPACING / EFFECTIVE COUNT<strong>{simulation.beamDiagnostics.bunchSpacingNs} ns / {simulation.beamDiagnostics.numberOfBunches.toLocaleString()}</strong></span>
+            <span>BUNCH CROSSINGS / SECOND<strong>{simulation.beamDiagnostics.bunchCollisionFrequencyHz.toLocaleString(undefined, { maximumFractionDigits: 0 })} Hz</strong></span>
             <span>MODEL LUMINOSITY<strong>{simulation.beamDiagnostics.luminosityAvailable ? `${simulation.beamDiagnostics.luminosityCm2S.toExponential(2)} cm⁻²s⁻¹` : 'N/A FOR BEAM CONFIG'}</strong></span>
-            <span>BUNCH STRUCTURE<strong>{simulation.beamDiagnostics.bunchSpacingNs} ns / {simulation.beamDiagnostics.numberOfBunches.toLocaleString()} bunches</strong></span>
-            <span>BETA* / BEAM SIZE<strong>{simulation.beamDiagnostics.betaStarM.toFixed(3)} m / {(simulation.beamDiagnostics.beamSizeAM * 1000).toFixed(3)} mm</strong></span>
-            <span>BEAM DIVERGENCE A<strong>{(simulation.beamDiagnostics.beamDivergenceAMrad * 1000).toFixed(3)} mrad</strong></span>
-            <span>FIELD / RIGIDITY<strong>{simulation.beamDiagnostics.fieldLimited ? 'ENERGY LIMITED' : 'WITHIN SETPOINT'}</strong></span>
+            <span>ORBIT / STABILITY<strong>{simulation.beamDiagnostics.orbitOffsetMm.toFixed(3)} mm / {simulation.beamDiagnostics.stabilityPercent.toFixed(1)}%</strong></span>
+            <span>CENTRE-OF-MASS ENERGY (√s)<strong>{simulation.beamDiagnostics.centerOfMassEnergyGeV.toFixed(3)} GeV</strong></span>
+            <span>FIELD LIMIT / ORBIT STATUS<strong>{simulation.beamDiagnostics.fieldLimited ? 'FIELD LIMITED' : 'FIELD OK'} · {simulation.beamDiagnostics.orbitCorrectionNeeded ? 'CORRECTION CHECK' : 'ORBIT OK'}</strong></span>
           </div>
         </section>
         <section className="console-bank beam-diagnostic-bank beam-speed-bank">
