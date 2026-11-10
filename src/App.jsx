@@ -74,6 +74,7 @@ function App() {
   }, [addNotification]);
   const operations = {
     performStartupAction: engine.performStartupAction,
+    skipStartup: engine.skipStartup,
     endFill,
     dumpBeam: engine.dumpBeam,
     prepareNextFill: engine.prepareNextFill,

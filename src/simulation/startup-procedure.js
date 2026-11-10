@@ -267,3 +267,27 @@ export function createStartupSystems() {
     collisionsActive: false,
   }
 }
+
+export function createSkippedStartupState(beamRampComplete) {
+  const startupSystems = createStartupSystems()
+  const skippedSteps = startupProcedure.slice(0, -1)
+
+  skippedSteps.forEach((step) => {
+    startupSystems[step.system] = true
+  })
+
+  startupSystems.cryoStarted = true
+  startupSystems.cryoTemperature = 1.9
+  startupSystems.vacuumPumpsOn = true
+  startupSystems.vacuumPressure = 1e-9
+  startupSystems.dipoleProgress = 100
+  startupSystems.quadrupoleProgress = 100
+  startupSystems.beamRampProgress = 100
+  startupSystems.beamRampComplete = beamRampComplete
+
+  return {
+    startupSystems,
+    completedProcedureSteps: skippedSteps.map((step) => step.id),
+    startupProcedureStep: startupProcedure.length,
+  }
+}

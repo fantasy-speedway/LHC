@@ -1,7 +1,7 @@
 import { checkNames } from '../collider/components'
 import { createCollisionEvent } from '../collision/engine'
 import { environmentDefaults } from '../environment/systems'
-import { createStartupSystems, startupProcedure } from './startup-procedure'
+import { createSkippedStartupState, createStartupSystems, startupProcedure } from './startup-procedure'
 import { chooseRunningIncident, chooseStartupFailure, createIncident } from './incidents'
 import { calculateBeamDiagnostics, calculateRfRampEnergyGeV } from '../physics/beam-physics'
 import { advanceProcessedEventCounter } from './event-counter'
@@ -129,15 +129,15 @@ export function createSimulationEngine() {
     if (procedureInterval !== null) window.clearInterval(procedureInterval)
     procedureInterval = null
   }
-  const setBeamEnergies = (energyA, energyB) => ({
+  const setBeamEnergies = (energyA, energyB, startupSystems = state.startupSystems) => ({
     ...(() => {
       const beamDiagnostics = calculateBeamDiagnostics(state.beam, {
         energyA,
         energyB,
         timeSeconds: performance.now() / 1000,
-        orbitCorrectionActive: state.startupSystems.orbitCorrected,
-        vacuumPressureMbar: state.startupSystems.vacuumPressure,
-        cryogenicTemperatureK: state.startupSystems.cryoTemperature,
+        orbitCorrectionActive: startupSystems.orbitCorrected,
+        vacuumPressureMbar: startupSystems.vacuumPressure,
+        cryogenicTemperatureK: startupSystems.cryoTemperature,
       })
       const beamEnergy = beamDiagnostics.beamA.energyGeV
       const beamEnergyB = beamDiagnostics.beamB.energyGeV
@@ -697,6 +697,56 @@ export function createSimulationEngine() {
     })
   }
 
+  const skipStartup = () => {
+    if (!['STANDBY', 'TECHNICAL_STOP', 'STARTUP_PROCEDURE'].includes(state.operationPhase)
+      || state.startupBusyStep
+      || state.incident) return
+
+    clearTransition()
+    stopFrame()
+    endFillAtNextEvent = false
+    autoDumpAtBoundary = false
+    runningIncidentElapsedMs = 0
+
+    const prepared = createSkippedStartupState(false)
+    const beamUpdates = setBeamEnergies(
+      state.beam.targetEnergy,
+      state.beam.targetEnergyB,
+      prepared.startupSystems,
+    )
+    const beamRampComplete = beamUpdates.beamEnergy + 1e-6 >= state.beam.targetEnergy
+      && beamUpdates.beamEnergyB + 1e-6 >= state.beam.targetEnergyB
+    const startupSystems = {
+      ...prepared.startupSystems,
+      beamRampComplete,
+      collisionsActive: true,
+    }
+    const energyMessage = beamRampComplete
+      ? 'Configured beam targets reached.'
+      : `Beam energy is dipole-limited to ${beamUpdates.beamEnergy.toFixed(2)} / ${beamUpdates.beamEnergyB.toFixed(2)} GeV, below the configured targets.`
+
+    setState({
+      ...beamUpdates,
+      status: 'RUNNING',
+      beamStatus: 'RUNNING',
+      magnetStatus: 'POWERED / STABLE',
+      operationPhase: 'COLLISIONS',
+      startupProcedureStep: prepared.startupProcedureStep,
+      completedProcedureSteps: prepared.completedProcedureSteps,
+      startupBusyStep: null,
+      startupSwitchTarget: null,
+      startupProgress: 1,
+      startupSystems,
+      startupFailure: null,
+      startupAttemptFailureChosen: true,
+      checks: startupCheckStatus(startupSystems),
+      beamActivity: 0.18,
+      message: `Timed start-up skipped; local CMS-template collision replay started. ${energyMessage} No CERN hardware is connected.`,
+      lastTimestamp: 0,
+    })
+    frame = requestAnimationFrame(tick)
+  }
+
   const resolveIncident = (incidentId) => {
     const incident = state.incident
     if (!incident || incident.id !== incidentId) return
@@ -917,6 +967,7 @@ export function createSimulationEngine() {
       return () => listeners.delete(listener)
     },
     performStartupAction,
+    skipStartup,
     resolveIncident,
     endFill,
     dumpBeam,

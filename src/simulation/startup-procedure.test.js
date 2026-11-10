@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createStartupSystems, startupProcedure } from './startup-procedure.js'
+import { createSkippedStartupState, createStartupSystems, startupProcedure } from './startup-procedure.js'
 
 test('startup controls cover the requested order as individual commands', () => {
   assert.deepEqual(startupProcedure.map((step) => step.section), [
@@ -49,6 +49,23 @@ test('modeled systems begin unpowered and report no ready hardware', () => {
   assert.equal(systems.atlasReady, false)
   assert.equal(systems.cmsReady, false)
   assert.equal(systems.collisionsActive, false)
+})
+
+test('skipped startup state marks procedure steps and preserves the beam-ramp result', () => {
+  const { startupSystems, completedProcedureSteps, startupProcedureStep } = createSkippedStartupState(false)
+
+  assert.equal(startupProcedureStep, startupProcedure.length)
+  assert.deepEqual(completedProcedureSteps, startupProcedure.slice(0, -1).map((step) => step.id))
+  assert.equal(startupSystems.gridPower, true)
+  assert.equal(startupSystems.cryoReady, true)
+  assert.equal(startupSystems.cryoTemperature, 1.9)
+  assert.equal(startupSystems.vacuumStable, true)
+  assert.equal(startupSystems.vacuumPressure, 1e-9)
+  assert.equal(startupSystems.dipolesReady, true)
+  assert.equal(startupSystems.quadrupolesReady, true)
+  assert.equal(startupSystems.beamRampComplete, false)
+  assert.equal(startupSystems.collisionModeArmed, true)
+  assert.equal(startupSystems.collisionsActive, false)
 })
 
 test('startup controls use the requested modeled transition durations', () => {

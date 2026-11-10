@@ -96,6 +96,9 @@
 .help-reading-steps li { color: #b7c5c2; padding: 4px 0 7px 4px; line-height: 1.65; }
 .help-reading-grid { margin: 12px 0; }
 .help-route-button { margin-top: 8px; }
+.help-data-guide-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.help-data-guide-links a { min-height: 44px; display: inline-flex; align-items: center; border: 1px solid #315057; background: #0d1a20; color: var(--cyan); padding: 9px 12px; text-decoration: none; }
+.help-data-guide-links a:hover { background: #12242a; }
 .help-glossary div { grid-template-columns: minmax(100px, 0.35fr) minmax(0, 1fr); gap: 12px; }
 .help-glossary dd, .help-operation-steps span, .injector-guide-stages small,
 .priority-help-card span, .incident-rates-table td { overflow-wrap: anywhere; }

@@ -240,6 +240,9 @@ function StartupPanel({ simulation, operations }) {
 
 export default function OperationSequence({ simulation, operations }) {
   const phase = simulation.operationPhase ?? 'STANDBY'
+  const canSkipStartup = ['STANDBY', 'TECHNICAL_STOP', 'STARTUP_PROCEDURE'].includes(phase)
+    && !simulation.startupBusyStep
+    && !simulation.incident
 
   return (
     <section className="operation-sequence" aria-labelledby="operation-sequence-title">
@@ -248,6 +251,7 @@ export default function OperationSequence({ simulation, operations }) {
           <span className="section-kicker">SIMULATED OPERATOR PROCEDURE</span>
           <h3 id="operation-sequence-title">Interlocked start-up and fill controls</h3>
           <p>Operate each named control in order. Pushbuttons run timed commands; switches stay latched and can be turned off to reset dependent steps.</p>
+          {canSkipStartup && <button className="operation-skip-link" type="button" onClick={operations.skipStartup}>Already familiar? Skip timed setup</button>}
         </div>
         <strong className={`operation-phase phase-${phase.toLowerCase().replaceAll('_', '-')}`}>{phase.replaceAll('_', ' ')}</strong>
       </header>

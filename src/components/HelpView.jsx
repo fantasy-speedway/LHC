@@ -21,6 +21,7 @@ export default function HelpView({ onNavigate = () => {} }) {
       <nav className="help-contents" aria-label="Help page contents">
         <strong>JUMP TO</strong>
         <a href="#first-visit">Start here</a>
+        <a href="#data-reading">How to read data</a>
         <a href="#read-analysis">Read the analysis</a>
         <a href="#read-events">Read an event</a>
         <a href="#quick-start">Quick start</a>
@@ -73,6 +74,40 @@ export default function HelpView({ onNavigate = () => {} }) {
             <p>Research records stay in this browser profile; export an archive to move or back them up.</p>
             <button type="button" onClick={() => onNavigate('Data')}>OPEN DATA &amp; RESEARCH</button>
           </article>
+        </div>
+      </section>
+
+      <section className="help-page-card" id="data-reading">
+        <div className="help-card-heading">
+          <div><span className="section-kicker">DATA GUIDE / START HERE</span><h4>How to read the data and understand what it means</h4></div>
+          <span className="help-units">CHECK THE SOURCE BEFORE THE NUMBER</span>
+        </div>
+        <p>Use this section whenever you are unsure what a value, plot, or event is telling you. First identify where the information came from, then check its units and selection, and only then interpret the pattern. A number without its source and context can be misleading.</p>
+        <div className="help-reading-grid">
+          <article>
+            <h5>1. Identify the source</h5>
+            <p><strong>CMS 2010 reference</strong> means recorded measurements from the bundled CERN Open Data sample. They are selected J/ψ→μ⁺μ⁻ records, not a complete record of every LHC collision.</p>
+            <p><strong>Data-informed simulation</strong> means the app reused a recorded CMS event as a template and added modeled detector response. It is not a new measured CERN event. <strong>Model</strong>, <strong>estimated</strong>, or <strong>simulated</strong> values describe the app’s educational calculations, not live CERN readings.</p>
+          </article>
+          <article>
+            <h5>2. Read the value and its unit</h5>
+            <p><strong>GeV</strong> is an energy unit; <strong>GeV/c</strong> is momentum; <strong>GeV/c²</strong> is mass. Do not compare the values as if they were the same quantity. For a muon, <strong>pT</strong> is its momentum across the beam, while <strong>η</strong> and <strong>φ</strong> describe direction.</p>
+            <p>In a histogram, the horizontal axis shows value ranges (bins) and the height of each bar shows how many selected entries fell in that range. A taller bar means more entries there; it does not mean each event has a larger value.</p>
+          </article>
+          <article>
+            <h5>3. Check how the sample was selected</h5>
+            <p>Analysis cuts are requirements applied to the events. The cutflow counts how many remain after each requirement; later rows usually cannot exceed earlier rows. Selection efficiency is the passing fraction for this sample and these cuts—not detector efficiency, an LHC production rate, or a probability that a particle exists.</p>
+            <p>Change one cut at a time to see how it changes the sample. A peak or a flagged event is a reason to investigate, not proof of a discovery.</p>
+          </article>
+        </div>
+        <div className="help-important-note">
+          <strong>When data is unavailable, it is not zero.</strong> The source CSV does not include several quantities such as collision energy, timestamps, raw detector hits, and recorded missing transverse momentum. If the interface says “unavailable” or “not in CSV,” it means that measurement was not supplied; do not infer a zero value.
+        </div>
+        <div className="help-data-guide-links" aria-label="Detailed data-reading guides">
+          <a href="#read-analysis">Step-by-step Analysis and chart guide ↓</a>
+          <a href="#read-events">Event Display guide ↓</a>
+          <a href="#measurements">Measurement glossary ↓</a>
+          <a href="#data-provenance">Dataset source and limitations ↓</a>
         </div>
       </section>
 
@@ -199,6 +234,7 @@ export default function HelpView({ onNavigate = () => {} }) {
           <li><b>End of fill</b><span>Request the end of fill; the simulator stops collisions at the next event boundary, then explicitly extract beams to the modeled dump.</span></li>
         </ol>
         <p>Beam-channel configuration is handled separately on <strong>Beam Control</strong>. In standby or technical-stop, edit the Beam A or Beam B settings and press that channel’s LOAD CONFIGURATION pushbutton; each channel loads independently over a five-second simulated transition. Settings are interlocked during startup and operation. Injection, RF, energy ramping, and beam alignment still use the staged Overview controls.</p>
+        <p>For a quicker demonstration, the small <strong>Already familiar? Skip timed setup</strong> link beneath the Overview start-up instructions bypasses the staged controls and starts the local collision replay. It is available only when no startup action or fault is in progress. The model still limits beam energy according to the configured dipole field, and the CMS event templates are not changed or turned into new CERN measurements.</p>
         <p>The operator panel exposes individual pushbuttons, latched switches, readiness indicators, and timed accelerated gauges rather than a generic “next stage” command. Switching off a completed control resets dependent later steps; reverse the procedure before disabling upstream equipment. Displayed seconds are deliberately compressed and do not represent actual LHC timings: real commissioning, machine protection, cryogenics, beam transfer, detector coordination, and approvals require dedicated CERN systems and qualified operators. The listed 13.6 TeV Run 3 energy is a reference only; beam controls drive an educational machine model, while resampled event kinematics remain those of their recorded CMS templates. This app has no CERN connection and cannot operate hardware.</p>
         <div className="help-source-links">
           <a href={acceleratorComplex} target="_blank" rel="noreferrer">CERN ACCELERATOR COMPLEX ↗</a>
