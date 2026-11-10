@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   calculateBeamDiagnostics,
   calculateRfAccelerationFraction,
+  calculateRfRampEnergyGeV,
   dipoleFieldForMomentumTesla,
   energyFromMomentumGeV,
   momentumFromDipoleFieldGeV,
@@ -71,6 +72,73 @@ test('RF voltage limits ramp progress and honors charge magnitude', () => {
   assert.equal(calculateRfAccelerationFraction('proton', 8), 0.5)
   assert.equal(calculateRfAccelerationFraction('electron', 16), 1)
   assert.equal(calculateRfAccelerationFraction('proton', 32), 1)
+
+  const nominalHalfRamp = calculateRfRampEnergyGeV({
+    initialEnergyGeV: 4, targetEnergyGeV: 12, particleType: 'proton', rfVoltageMV: 16, progress: 0.5,
+  })
+  const lowerVoltageHalfRamp = calculateRfRampEnergyGeV({
+    initialEnergyGeV: 4, targetEnergyGeV: 12, particleType: 'proton', rfVoltageMV: 8, progress: 0.5,
+  })
+  const lowerVoltageCompleteRamp = calculateRfRampEnergyGeV({
+    initialEnergyGeV: 4, targetEnergyGeV: 12, particleType: 'proton', rfVoltageMV: 8, progress: 1,
+  })
+
+  assert.equal(nominalHalfRamp.energyGeV, 8)
+  assert.equal(lowerVoltageHalfRamp.energyGeV, 6)
+  assert.equal(lowerVoltageCompleteRamp.energyGeV, 8)
+  assert.equal(lowerVoltageCompleteRamp.estimatedTimeToTargetSeconds, 120)
+  assert.equal(lowerVoltageCompleteRamp.energyGainRateGeVPerSecond, 8 / 120)
+})
+
+test('quadrupole optics, vacuum, and cryogenic conditions affect beam diagnostics', () => {
+  const beam = {
+    particleType: 'proton',
+    particleTypeB: 'proton',
+    initialEnergy: 12,
+    initialEnergyB: 12,
+    targetEnergy: 12,
+    targetEnergyB: 12,
+    dipoleFieldTesla: dipoleFieldForMomentumTesla(momentumFromEnergyGeV(12, 0.93827208816)),
+    quadrupoleGradientTM: 200,
+    intensity: 80,
+    intensityB: 80,
+    direction: 'clockwise',
+    directionB: 'counterClockwise',
+  }
+  const nominal = calculateBeamDiagnostics(beam, {
+    energyA: 12, energyB: 12, orbitOffsetMm: 0, vacuumPressureMbar: 1e-9, cryogenicTemperatureK: 1.9,
+  })
+  const degraded = calculateBeamDiagnostics({ ...beam, quadrupoleGradientTM: 100 }, {
+    energyA: 12, energyB: 12, orbitOffsetMm: 0, vacuumPressureMbar: 1e-7, cryogenicTemperatureK: 3.9,
+  })
+
+  assert.ok(Math.abs(nominal.betaStarAM - 0.4) < 1e-8)
+  assert.ok(degraded.betaStarAM > nominal.betaStarAM)
+  assert.ok(degraded.beamSizeAM > nominal.beamSizeAM)
+  assert.ok(degraded.stabilityPercent < nominal.stabilityPercent)
+  assert.equal(degraded.vacuumStabilityPenaltyPercent, 2.5)
+})
+
+test('orbit correction reduces modeled offset and restores overlap stability', () => {
+  const beam = {
+    particleType: 'proton',
+    particleTypeB: 'proton',
+    initialEnergy: 12,
+    initialEnergyB: 12,
+    targetEnergy: 12,
+    targetEnergyB: 12,
+    dipoleFieldTesla: dipoleFieldForMomentumTesla(momentumFromEnergyGeV(12, 0.93827208816)),
+    quadrupoleGradientTM: 200,
+    direction: 'clockwise',
+    directionB: 'counterClockwise',
+  }
+  const uncorrected = calculateBeamDiagnostics(beam, { energyA: 12, energyB: 12, timeSeconds: 2 })
+  const corrected = calculateBeamDiagnostics(beam, {
+    energyA: 12, energyB: 12, timeSeconds: 2, orbitCorrectionActive: true,
+  })
+
+  assert.ok(Math.abs(corrected.orbitOffsetMm) < Math.abs(uncorrected.orbitOffsetMm))
+  assert.ok(corrected.stabilityPercent > uncorrected.stabilityPercent)
 })
 
 test('beam diagnostics derive energy, center-of-mass energy, luminosity, and orbit response', () => {

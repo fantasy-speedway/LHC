@@ -3,7 +3,7 @@ import { createCollisionEvent } from '../collision/engine'
 import { environmentDefaults } from '../environment/systems'
 import { createStartupSystems, startupProcedure } from './startup-procedure'
 import { chooseRunningIncident, chooseStartupFailure, createIncident } from './incidents'
-import { calculateBeamDiagnostics, calculateRfAccelerationFraction } from '../physics/beam-physics'
+import { calculateBeamDiagnostics, calculateRfRampEnergyGeV } from '../physics/beam-physics'
 import { simulateDetectorResponse } from '../detector/response'
 
 const defaultBeam = {
@@ -42,6 +42,20 @@ function startupCheckStatus(systems) {
   return checkNames.map((name) => ({ name, status: statuses[name] ?? 'NOT CHECKED' }))
 }
 
+function machineTelemetrySample(time, diagnostics, cryogenicTemperatureK, vacuumPressureMbar) {
+  return {
+    time,
+    beamEnergyGeV: (diagnostics.beamA.energyGeV + diagnostics.beamB.energyGeV) / 2,
+    dipoleFieldTesla: diagnostics.dipoleFieldTesla,
+    quadrupoleGradientTM: diagnostics.quadrupoleGradientTM,
+    vacuumPressureMbar,
+    cryogenicTemperatureK,
+    orbitOffsetMm: diagnostics.orbitOffsetMm,
+    stabilityPercent: diagnostics.stabilityPercent,
+    luminosityCm2S: diagnostics.luminosityCm2S,
+  }
+}
+
 const initialState = {
   status: 'READY',
   beamStatus: 'OFF',
@@ -72,6 +86,7 @@ const initialState = {
   revolutionsB: 0,
   energyHistory: [{ time: 0, energy: defaultBeam.initialEnergy }],
   energyHistoryB: [{ time: 0, energy: defaultBeam.initialEnergyB }],
+  telemetryHistory: [],
   beam: defaultBeam,
   collisions: 0,
   detectedParticles: 0,
@@ -118,6 +133,9 @@ export function createSimulationEngine() {
         energyA,
         energyB,
         timeSeconds: performance.now() / 1000,
+        orbitCorrectionActive: state.startupSystems.orbitCorrected,
+        vacuumPressureMbar: state.startupSystems.vacuumPressure,
+        cryogenicTemperatureK: state.startupSystems.cryoTemperature,
       })
       const beamEnergy = beamDiagnostics.beamA.energyGeV
       const beamEnergyB = beamDiagnostics.beamB.energyGeV
@@ -192,10 +210,21 @@ export function createSimulationEngine() {
     if (!state.lastTimestamp) state.lastTimestamp = timestamp
     const elapsed = Math.min(timestamp - state.lastTimestamp, 100)
     const nextTime = state.time + elapsed * 0.0008 * state.speed
+    const activeVacuumFaults = state.faults.filter((fault) =>
+      fault.system === 'Vacuum' && ['ACTIVE', 'RECOVERING'].includes(fault.status)).length
+    const activeCoolingFaults = state.faults.filter((fault) =>
+      fault.system === 'Cooling' && ['ACTIVE', 'RECOVERING'].includes(fault.status)).length
+    const vacuumPressureMbar = state.startupSystems.vacuumPressure * 10 ** activeVacuumFaults
+    const cryogenicTemperatureK = (state.startupSystems.cryoReady
+      ? 1.9 + Math.sin(nextTime * 0.7) * 0.02
+      : state.startupSystems.cryoTemperature) + activeCoolingFaults * 0.4
     const beamDiagnostics = calculateBeamDiagnostics(state.beam, {
       energyA: state.beamEnergy,
       energyB: state.beamEnergyB,
       timeSeconds: timestamp / 1000,
+      orbitCorrectionActive: state.startupSystems.orbitCorrected,
+      vacuumPressureMbar,
+      cryogenicTemperatureK,
     })
     const beamEnergy = beamDiagnostics.beamA.energyGeV
     const beamEnergyB = beamDiagnostics.beamB.energyGeV
@@ -203,9 +232,13 @@ export function createSimulationEngine() {
       ...state.environment,
       cooling: {
         ...state.environment.cooling,
-        temperature: state.startupSystems.cryoReady
-          ? 1.9 + Math.sin(nextTime * 0.7) * 0.02
-          : state.startupSystems.cryoTemperature,
+        temperature: cryogenicTemperatureK,
+        efficiency: Math.max(0, 100 - Math.max(0, cryogenicTemperatureK - 1.9) * 5),
+      },
+      vacuum: {
+        ...state.environment.vacuum,
+        quality: Math.max(0, 100 - Math.max(0, Math.log10(vacuumPressureMbar / 1e-9)) * 8),
+        activity: vacuumPressureMbar > 1e-9 ? 'Pressure elevated' : 'Nominal',
       },
       computing: { ...state.environment.computing, load: Math.min(96, 22 + state.collisions * 0.4) },
     }
@@ -216,6 +249,14 @@ export function createSimulationEngine() {
     const energyHistoryB = historyClock > 140
       ? [...state.energyHistoryB, { time: nextTime, energy: beamEnergyB }].slice(-48)
       : state.energyHistoryB
+    const telemetryHistory = historyClock > 140
+      ? [...state.telemetryHistory, machineTelemetrySample(
+        nextTime,
+        beamDiagnostics,
+        cryogenicTemperatureK,
+        vacuumPressureMbar,
+      )].slice(-60)
+      : state.telemetryHistory
     if (historyClock > 140) historyClock = 0
 
     let nextState = {
@@ -233,6 +274,7 @@ export function createSimulationEngine() {
       revolutionsB: state.revolutionsB + elapsed * 0.00014 * state.speed,
       energyHistory,
       energyHistoryB,
+      telemetryHistory,
       collisionFlash: Math.max(0, state.collisionFlash - elapsed * 0.002),
       systemHealth: Math.max(82, 98.7 - state.faults.filter((fault) => ['ACTIVE', 'RECOVERING'].includes(fault.status)).length * 4),
       beamStatus: ['COLLISIONS', 'STANDALONE_RUN'].includes(state.operationPhase) ? 'RUNNING' : 'STABLE',
@@ -259,6 +301,7 @@ export function createSimulationEngine() {
       const activeDetectorFaults = state.faults.filter((fault) =>
         fault.system === 'Detector' && ['ACTIVE', 'RECOVERING'].includes(fault.status)).length
       const detectorEfficiency = Math.max(0, environment.detector.efficiency - activeDetectorFaults * 8) / 100
+        * Math.max(0, Math.min(1, environment.cooling.efficiency / 100))
       const collisionWithContext = simulateDetectorResponse(collision, {
         detectorEfficiency,
         magneticFieldTesla: 3.8,
@@ -492,14 +535,46 @@ export function createSimulationEngine() {
         currentSystems.beamRampProgress = 100
       }
 
+      if (step.id === 'beam-ramp'
+        && (state.beamEnergy + 1e-6 < state.beam.targetEnergy
+          || state.beamEnergyB + 1e-6 < state.beam.targetEnergyB)) {
+        setState({
+          status: 'BEAM RAMP BELOW TARGET',
+          operationPhase: 'STARTUP_PROCEDURE',
+          startupProcedureStep: stepIndex,
+          completedProcedureSteps: completedSteps,
+          startupBusyStep: null,
+          startupSwitchTarget: null,
+          startupProgress: 0,
+          startupSystems: { ...state.startupSystems, beamRampComplete: false, beamRampProgress: 100 },
+          checks: startupCheckStatus({ ...state.startupSystems, beamRampComplete: false }),
+          message: `RF ramp stopped at ${state.beamEnergy.toFixed(2)} / ${state.beam.targetEnergy.toFixed(2)} GeV for Beam A and ${state.beamEnergyB.toFixed(2)} / ${state.beam.targetEnergyB.toFixed(2)} GeV for Beam B. Increase RF voltage or correct the magnet field, then retry the ramp.`,
+        })
+        return
+      }
+
       const nextStepIndex = stepIndex + 1
       const nextStep = startupProcedure[nextStepIndex]
       const isStartingCollisions = step.id === 'start-collisions'
       const nextCompletedSteps = [...completedSteps, step.id]
       const beamUpdates = step.id === 'beam-ramp'
         ? setBeamEnergies(
-          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * calculateRfAccelerationFraction(state.beam.particleType, state.beam.rfVoltageMV),
-          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * calculateRfAccelerationFraction(state.beam.particleTypeB, state.beam.rfVoltageMV),
+          calculateRfRampEnergyGeV({
+            initialEnergyGeV: state.beam.initialEnergy,
+            targetEnergyGeV: state.beam.targetEnergy,
+            particleType: state.beam.particleType,
+            rfVoltageMV: state.beam.rfVoltageMV,
+            progress: 1,
+            rampDurationSeconds: step.duration / 1000,
+          }).energyGeV,
+          calculateRfRampEnergyGeV({
+            initialEnergyGeV: state.beam.initialEnergyB,
+            targetEnergyGeV: state.beam.targetEnergyB,
+            particleType: state.beam.particleTypeB,
+            rfVoltageMV: state.beam.rfVoltageMV,
+            progress: 1,
+            rampDurationSeconds: step.duration / 1000,
+          }).energyGeV,
         )
         : {}
 
@@ -564,11 +639,23 @@ export function createSimulationEngine() {
         progressSystems.quadrupoleProgress = progress * 100
       } else if (step.id === 'beam-ramp') {
         progressSystems.beamRampProgress = progress * 100
-        const accelerationProgressA = progress * calculateRfAccelerationFraction(state.beam.particleType, state.beam.rfVoltageMV)
-        const accelerationProgressB = progress * calculateRfAccelerationFraction(state.beam.particleTypeB, state.beam.rfVoltageMV)
         setState(setBeamEnergies(
-          state.beam.initialEnergy + (state.beam.targetEnergy - state.beam.initialEnergy) * accelerationProgressA,
-          state.beam.initialEnergyB + (state.beam.targetEnergyB - state.beam.initialEnergyB) * accelerationProgressB,
+          calculateRfRampEnergyGeV({
+            initialEnergyGeV: state.beam.initialEnergy,
+            targetEnergyGeV: state.beam.targetEnergy,
+            particleType: state.beam.particleType,
+            rfVoltageMV: state.beam.rfVoltageMV,
+            progress,
+            rampDurationSeconds: step.duration / 1000,
+          }).energyGeV,
+          calculateRfRampEnergyGeV({
+            initialEnergyGeV: state.beam.initialEnergyB,
+            targetEnergyGeV: state.beam.targetEnergyB,
+            particleType: state.beam.particleTypeB,
+            rfVoltageMV: state.beam.rfVoltageMV,
+            progress,
+            rampDurationSeconds: step.duration / 1000,
+          }).energyGeV,
         ))
       }
       setState({
@@ -841,12 +928,17 @@ export function createSimulationEngine() {
     },
     setSpeed: (speed) => setState({ speed }),
     setBeamConfig: (updates) => {
-      if (!['STANDBY', 'TECHNICAL_STOP'].includes(state.operationPhase) && state.status !== 'PAUSED') return
+      if (!['STANDBY', 'TECHNICAL_STOP'].includes(state.operationPhase)
+        && state.status !== 'PAUSED'
+        && state.status !== 'BEAM RAMP BELOW TARGET') return
       const beam = { ...state.beam, ...updates }
       const diagnostics = calculateBeamDiagnostics(beam, {
         energyA: beam.initialEnergy,
         energyB: beam.initialEnergyB,
         timeSeconds: performance.now() / 1000,
+        orbitCorrectionActive: state.startupSystems.orbitCorrected,
+        vacuumPressureMbar: state.startupSystems.vacuumPressure,
+        cryogenicTemperatureK: state.startupSystems.cryoTemperature,
       })
       setState({
         beam,
@@ -856,6 +948,7 @@ export function createSimulationEngine() {
         beamDiagnostics: diagnostics,
         energyHistory: [{ time: state.time, energy: diagnostics.beamA.energyGeV }],
         energyHistoryB: [{ time: state.time, energy: diagnostics.beamB.energyGeV }],
+        telemetryHistory: [],
       })
     },
   }

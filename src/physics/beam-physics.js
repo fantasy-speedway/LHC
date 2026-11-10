@@ -13,6 +13,9 @@ export const LHC_NOMINAL_BUNCHES = 2808
 export const LHC_BUNCH_SPACING_NS = 25
 export const LHC_CIRCUMFERENCE_M = 26_658.883
 export const REFERENCE_RF_RAMP_VOLTAGE_MV = 16
+export const REFERENCE_RF_RAMP_DURATION_SECONDS = 60
+export const NOMINAL_VACUUM_PRESSURE_MBAR = 1e-9
+export const NOMINAL_CRYOGENIC_TEMPERATURE_K = 1.9
 
 const particleMassesGeV = {
   proton: PROTON_MASS_GEV,
@@ -99,11 +102,48 @@ export function calculateRfAccelerationFraction(particleType, rfVoltageMV) {
   )
 }
 
+export function calculateRfRampEnergyGeV({
+  initialEnergyGeV,
+  targetEnergyGeV,
+  particleType,
+  rfVoltageMV,
+  progress,
+  rampDurationSeconds = REFERENCE_RF_RAMP_DURATION_SECONDS,
+}) {
+  const initialEnergy = Number.isFinite(initialEnergyGeV) ? Math.max(0, initialEnergyGeV) : 0
+  const targetEnergy = Number.isFinite(targetEnergyGeV) ? Math.max(initialEnergy, targetEnergyGeV) : initialEnergy
+  const duration = Number.isFinite(rampDurationSeconds) ? Math.max(0, rampDurationSeconds) : 0
+  const elapsedFraction = Number.isFinite(progress) ? clamp(progress, 0, 1) : 0
+  const chargeMagnitude = Math.abs(getParticleChargeNumber(particleType))
+  const voltage = Number.isFinite(rfVoltageMV) ? Math.max(0, rfVoltageMV) : 0
+  const requestedGainGeV = targetEnergy - initialEnergy
+  const energyGainRateGeVPerSecond = duration > 0
+    ? requestedGainGeV / duration
+      * chargeMagnitude
+      * voltage / REFERENCE_RF_RAMP_VOLTAGE_MV
+    : 0
+  const energyGeV = Math.min(
+    targetEnergy,
+    initialEnergy + energyGainRateGeVPerSecond * duration * elapsedFraction,
+  )
+
+  return {
+    energyGeV,
+    energyGainRateGeVPerSecond,
+    estimatedTimeToTargetSeconds: energyGainRateGeVPerSecond > 0
+      ? requestedGainGeV / energyGainRateGeVPerSecond
+      : null,
+  }
+}
+
 export function calculateBeamDiagnostics(beam, {
   energyA = beam.initialEnergy,
   energyB = beam.initialEnergyB,
   timeSeconds = 0,
   orbitOffsetMm,
+  orbitCorrectionActive = false,
+  vacuumPressureMbar = NOMINAL_VACUUM_PRESSURE_MBAR,
+  cryogenicTemperatureK = NOMINAL_CRYOGENIC_TEMPERATURE_K,
 } = {}) {
   const fieldTesla = Number.isFinite(beam.dipoleFieldTesla) ? beam.dipoleFieldTesla : 0
   const channelA = beamKinematics({
@@ -120,29 +160,55 @@ export function calculateBeamDiagnostics(beam, {
   })
   const requiredFieldTesla = Math.max(channelA.requiredFieldTesla, channelB.requiredFieldTesla)
   const fieldRatio = requiredFieldTesla > 0 ? fieldTesla / requiredFieldTesla : 1
-  const modeledOrbitOffsetMm = Number.isFinite(orbitOffsetMm)
+  const uncorrectedOrbitOffsetMm = Number.isFinite(orbitOffsetMm)
     ? orbitOffsetMm
     : 0.12 * Math.sin(timeSeconds * 0.21) + 0.045 * Math.sin(timeSeconds * 0.73)
+  const modeledOrbitOffsetMm = uncorrectedOrbitOffsetMm * (orbitCorrectionActive ? 0.2 : 1)
   const fieldMismatchPercent = Math.abs(fieldRatio - 1) * 100
-  const stabilityPercent = clamp(99.4 - Math.abs(modeledOrbitOffsetMm) * 2.2 - fieldMismatchPercent * 0.35, 75, 99.8)
+  const quadrupoleGradientTM = Number.isFinite(beam.quadrupoleGradientTM)
+    ? clamp(beam.quadrupoleGradientTM, 20, 250)
+    : DEFAULT_QUADRUPOLE_GRADIENT_T_M
+  const referenceMomentumGeV = momentumFromEnergyGeV(12, PROTON_MASS_GEV)
+  const referenceRigidityTm = referenceMomentumGeV / 0.299792458
+  const normalizedQuadrupoleStrengthAM = quadrupoleGradientTM / Math.max(Math.abs(channelA.magneticRigidityTm), 1e-9)
+  const normalizedQuadrupoleStrengthBM = quadrupoleGradientTM / Math.max(Math.abs(channelB.magneticRigidityTm), 1e-9)
+  const referenceQuadrupoleStrength = DEFAULT_QUADRUPOLE_GRADIENT_T_M / referenceRigidityTm
+  const betaStarAM = clamp(DEFAULT_BETA_STAR_M * referenceQuadrupoleStrength / normalizedQuadrupoleStrengthAM, 0.1, 4)
+  const betaStarBM = clamp(DEFAULT_BETA_STAR_M * referenceQuadrupoleStrength / normalizedQuadrupoleStrengthBM, 0.1, 4)
+  const betaStarM = (betaStarAM + betaStarBM) / 2
+  const opticsMismatchPercent = (
+    Math.abs(betaStarAM - DEFAULT_BETA_STAR_M) + Math.abs(betaStarBM - DEFAULT_BETA_STAR_M)
+  ) / (2 * DEFAULT_BETA_STAR_M) * 100
+  const safeVacuumPressureMbar = Number.isFinite(vacuumPressureMbar) ? Math.max(vacuumPressureMbar, 1e-12) : NOMINAL_VACUUM_PRESSURE_MBAR
+  const safeCryogenicTemperatureK = Number.isFinite(cryogenicTemperatureK)
+    ? Math.max(cryogenicTemperatureK, NOMINAL_CRYOGENIC_TEMPERATURE_K)
+    : NOMINAL_CRYOGENIC_TEMPERATURE_K
+  const vacuumStabilityPenaltyPercent = clamp(
+    Math.max(0, Math.log10(safeVacuumPressureMbar / NOMINAL_VACUUM_PRESSURE_MBAR)) * 1.25,
+    0,
+    10,
+  )
+  const cryogenicStabilityPenaltyPercent = clamp((safeCryogenicTemperatureK - NOMINAL_CRYOGENIC_TEMPERATURE_K) * 0.1, 0, 10)
+  const stabilityPercent = clamp(
+    99.4
+      - Math.abs(modeledOrbitOffsetMm) * 2.2
+      - fieldMismatchPercent * 0.35
+      - opticsMismatchPercent * 0.06
+      - vacuumStabilityPenaltyPercent
+      - cryogenicStabilityPenaltyPercent,
+    50,
+    99.8,
+  )
   const configuredEmittanceUm = Number.isFinite(beam.normalizedEmittanceUm)
     ? beam.normalizedEmittanceUm
     : DEFAULT_NORMALIZED_EMITTANCE_UM
   const normalizedEmittanceUm = clamp(configuredEmittanceUm * (1 + (100 - stabilityPercent) * 0.025), 0.25, 20)
   const geometricEmittanceAM = normalizedEmittanceUm * 1e-6 / Math.max(channelA.gamma, 1)
   const geometricEmittanceBM = normalizedEmittanceUm * 1e-6 / Math.max(channelB.gamma, 1)
-  const quadrupoleGradientTM = Number.isFinite(beam.quadrupoleGradientTM)
-    ? clamp(beam.quadrupoleGradientTM, 20, 250)
-    : DEFAULT_QUADRUPOLE_GRADIENT_T_M
-  const betaStarM = clamp(
-    DEFAULT_BETA_STAR_M * DEFAULT_QUADRUPOLE_GRADIENT_T_M / quadrupoleGradientTM,
-    0.1,
-    4,
-  )
-  const beamSizeAM = Math.sqrt(geometricEmittanceAM * betaStarM)
-  const beamSizeBM = Math.sqrt(geometricEmittanceBM * betaStarM)
-  const beamDivergenceAMrad = Math.sqrt(geometricEmittanceAM / betaStarM)
-  const beamDivergenceBMrad = Math.sqrt(geometricEmittanceBM / betaStarM)
+  const beamSizeAM = Math.sqrt(geometricEmittanceAM * betaStarAM)
+  const beamSizeBM = Math.sqrt(geometricEmittanceBM * betaStarBM)
+  const beamDivergenceAMrad = Math.sqrt(geometricEmittanceAM / betaStarAM)
+  const beamDivergenceBMrad = Math.sqrt(geometricEmittanceBM / betaStarBM)
   const oppositeDirections = beam.direction != null && beam.directionB != null
     ? beam.direction !== beam.directionB
     : true
@@ -169,6 +235,20 @@ export function calculateBeamDiagnostics(beam, {
   const rfVoltageMV = Number.isFinite(beam.rfVoltageMV) ? clamp(beam.rfVoltageMV, 1, 32) : REFERENCE_RF_RAMP_VOLTAGE_MV
   const rfAccelerationFractionA = calculateRfAccelerationFraction(beam.particleType, rfVoltageMV)
   const rfAccelerationFractionB = calculateRfAccelerationFraction(beam.particleTypeB, rfVoltageMV)
+  const rfRampA = calculateRfRampEnergyGeV({
+    initialEnergyGeV: beam.initialEnergy,
+    targetEnergyGeV: beam.targetEnergy,
+    particleType: beam.particleType,
+    rfVoltageMV,
+    progress: 1,
+  })
+  const rfRampB = calculateRfRampEnergyGeV({
+    initialEnergyGeV: beam.initialEnergyB,
+    targetEnergyGeV: beam.targetEnergyB,
+    particleType: beam.particleTypeB,
+    rfVoltageMV,
+    progress: 1,
+  })
 
   return {
     beamA: channelA,
@@ -182,6 +262,11 @@ export function calculateBeamDiagnostics(beam, {
     geometricEmittanceAM,
     geometricEmittanceBM,
     betaStarM,
+    betaStarAM,
+    betaStarBM,
+    normalizedQuadrupoleStrengthAM,
+    normalizedQuadrupoleStrengthBM,
+    opticsMismatchPercent,
     beamSizeAM,
     beamSizeBM,
     beamDivergenceAMrad,
@@ -190,6 +275,10 @@ export function calculateBeamDiagnostics(beam, {
     rfVoltageMV,
     rfAccelerationFractionA,
     rfAccelerationFractionB,
+    rfEnergyGainRateGeVPerSecondA: rfRampA.energyGainRateGeVPerSecond,
+    rfEnergyGainRateGeVPerSecondB: rfRampB.energyGainRateGeVPerSecond,
+    rfEstimatedTimeToTargetSecondsA: rfRampA.estimatedTimeToTargetSeconds,
+    rfEstimatedTimeToTargetSecondsB: rfRampB.estimatedTimeToTargetSeconds,
     bunchSpacingNs,
     requestedNumberOfBunches,
     bunchSlotsAvailable,
@@ -198,8 +287,14 @@ export function calculateBeamDiagnostics(beam, {
     bunchPopulationB,
     bunchCollisionFrequencyHz: LHC_REVOLUTION_FREQUENCY_HZ * numberOfBunches,
     orbitOffsetMm: modeledOrbitOffsetMm,
+    uncorrectedOrbitOffsetMm,
+    orbitCorrectionActive,
     orbitCorrectionNeeded: Math.abs(modeledOrbitOffsetMm) > 0.1 || fieldMismatchPercent > 5,
     stabilityPercent,
+    vacuumPressureMbar: safeVacuumPressureMbar,
+    vacuumStabilityPenaltyPercent,
+    cryogenicTemperatureK: safeCryogenicTemperatureK,
+    cryogenicStabilityPenaltyPercent,
     luminosityCm2S,
     luminosityAvailable: headOnProtonBeams,
     assumptions: {
@@ -212,6 +307,10 @@ export function calculateBeamDiagnostics(beam, {
       nominalProtonBunchPopulation: PROTON_BUNCH_POPULATION,
       normalizedEmittanceUm: DEFAULT_NORMALIZED_EMITTANCE_UM,
       betaStarM: DEFAULT_BETA_STAR_M,
+      referenceQuadrupoleRigidityTm: referenceRigidityTm,
+      normalizedOpticsModel: 'quadrupole gradient divided by magnetic rigidity; beta-star scaled to the 12 GeV proton reference',
+      machineConditionPenaltyModel: 'illustrative stability penalties for pressure above 1e-9 mbar and temperature above 1.9 K',
+      rfRampModel: 'charge magnitude × RF voltage sets a linear energy-gain rate calibrated to the requested energy change over 60 s at 16 MV',
       luminosityModel: 'single-bunch Gaussian head-on overlap; illustrative, not live',
     },
   }

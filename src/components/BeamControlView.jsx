@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { particleOptions } from '../beam/particles'
 import { calculateBeamDiagnostics } from '../physics/beam-physics'
 import BeamEnergyGraph from './BeamEnergyGraph'
+import MachineTelemetryChart from './MachineTelemetryChart'
 import '../simulation/operation-sequence.css'
 import '../beam/beam-control.css'
 import '../beam/beam-console.css'
@@ -9,6 +10,16 @@ import '../beam/beam-layout.css'
 
 const speeds = [0.25, 0.5, 1, 2, 5, 10]
 const CONFIG_LOAD_MS = 5000
+const telemetryMetrics = [
+  { key: 'beamEnergyGeV', label: 'MEAN BEAM ENERGY', unit: 'GeV', format: (value) => `${value.toFixed(2)} GeV` },
+  { key: 'dipoleFieldTesla', label: 'DIPOLE FIELD', unit: 'T', format: (value) => `${value.toFixed(4)} T` },
+  { key: 'quadrupoleGradientTM', label: 'QUADRUPOLE GRADIENT', unit: 'T/m', format: (value) => `${value.toFixed(1)} T/m` },
+  { key: 'vacuumPressureMbar', label: 'BEAM-PIPE PRESSURE', unit: 'mbar · log', logarithmic: true, format: (value) => `${value.toExponential(1)} mbar` },
+  { key: 'cryogenicTemperatureK', label: 'CRYOGENIC TEMPERATURE', unit: 'K', format: (value) => `${value.toFixed(2)} K` },
+  { key: 'orbitOffsetMm', label: 'MODELED ORBIT OFFSET', unit: 'mm', format: (value) => `${value.toFixed(3)} mm` },
+  { key: 'stabilityPercent', label: 'BEAM STABILITY', unit: '%', format: (value) => `${value.toFixed(1)}%` },
+  { key: 'luminosityCm2S', label: 'MODEL LUMINOSITY', unit: 'cm⁻² s⁻¹', format: (value) => value == null ? 'UNAVAILABLE' : value.toExponential(2) },
+]
 
 function formatEnergy(energyGeV) {
   return energyGeV >= 1000 ? `${(energyGeV / 1000).toFixed(2)} TeV` : `${energyGeV.toFixed(1)} GeV`
@@ -104,7 +115,7 @@ function BeamStatusScreen({ simulation, beam }) {
       <div className="beam-screen-metrics">
         <span>CHANNEL A<strong>{statusA}</strong></span>
         <span>CHANNEL B<strong>{statusB}</strong></span>
-        <span>RAMP STATUS<strong>{systems.beamRampComplete ? 'AT TARGET' : systems.rfEnabled ? 'READY' : 'STANDBY'}</strong></span>
+        <span>RAMP STATUS<strong>{systems.beamRampComplete ? 'AT TARGET' : systems.beamRampProgress >= 100 ? 'BELOW TARGET / RETRY' : systems.rfEnabled ? 'READY' : 'STANDBY'}</strong></span>
         <span>COLLISIONS<strong>{systems.collisionsActive ? 'ACTIVE · LOCAL' : 'OFF'}</strong></span>
         <span>MODEL √S<strong>{formatEnergy(simulation.beamDiagnostics.centerOfMassEnergyGeV)}</strong></span>
         <span>LUMINOSITY<strong>{simulation.beamDiagnostics.luminosityAvailable ? `${simulation.beamDiagnostics.luminosityCm2S.toExponential(2)} cm⁻²s⁻¹` : 'HEAD-ON PROTONS REQUIRED'}</strong></span>
@@ -154,6 +165,7 @@ function BeamStatusScreen({ simulation, beam }) {
 
 export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
   const controlsLocked = !['STANDBY', 'TECHNICAL_STOP'].includes(simulation.operationPhase)
+    && simulation.status !== 'BEAM RAMP BELOW TARGET'
   const [draftBeam, setDraftBeam] = useState(simulation.beam)
   const [activeChannel, setActiveChannel] = useState(null)
   const [applyProgress, setApplyProgress] = useState(0)
@@ -196,7 +208,9 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
     }, CONFIG_LOAD_MS)
   }
 
-  const statusLabel = controlsLocked ? 'CONFIGURATION LOCKED' : 'STANDBY / READY'
+  const statusLabel = simulation.status === 'BEAM RAMP BELOW TARGET'
+    ? 'RAMP RETRY / CONFIGURABLE'
+    : controlsLocked ? 'CONFIGURATION LOCKED' : 'STANDBY / READY'
 
   return (
     <section className="operation-sequence beam-control-console" aria-labelledby="beam-console-title">
@@ -260,18 +274,23 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
             <span>BEAM B · ENERGY / MOMENTUM<strong>{simulation.beamDiagnostics.beamB.energyGeV.toFixed(3)} GeV / {simulation.beamDiagnostics.beamB.momentumGeV.toFixed(3)} GeV/c</strong></span>
             <span>SIGNED MAGNETIC RIGIDITY A / B<strong>{simulation.beamDiagnostics.beamA.magneticRigidityTm.toFixed(3)} / {simulation.beamDiagnostics.beamB.magneticRigidityTm.toFixed(3)} T·m</strong></span>
             <span>RF RAMP FRACTION A / B<strong>{(simulation.beamDiagnostics.rfAccelerationFractionA * 100).toFixed(0)}% / {(simulation.beamDiagnostics.rfAccelerationFractionB * 100).toFixed(0)}%</strong></span>
+            <span>RF ENERGY GAIN A / B<strong>{simulation.beamDiagnostics.rfEnergyGainRateGeVPerSecondA.toFixed(3)} / {simulation.beamDiagnostics.rfEnergyGainRateGeVPerSecondB.toFixed(3)} GeV/s</strong></span>
+            <span>EST. RAMP TIME A / B<strong>{simulation.beamDiagnostics.rfEstimatedTimeToTargetSecondsA?.toFixed(0) ?? '—'} / {simulation.beamDiagnostics.rfEstimatedTimeToTargetSecondsB?.toFixed(0) ?? '—'} s</strong></span>
             <span>NORMALIZED EMITTANCE<strong>{simulation.beamDiagnostics.normalizedEmittanceUm.toFixed(2)} μm</strong></span>
             <span>GEOMETRIC EMITTANCE A / B<strong>{(simulation.beamDiagnostics.geometricEmittanceAM * 1e9).toFixed(3)} / {(simulation.beamDiagnostics.geometricEmittanceBM * 1e9).toFixed(3)} nm·rad</strong></span>
             <span>TRANSVERSE SIZE A / B<strong>{(simulation.beamDiagnostics.beamSizeAM * 1e3).toFixed(3)} / {(simulation.beamDiagnostics.beamSizeBM * 1e3).toFixed(3)} mm</strong></span>
             <span>DIVERGENCE A / B<strong>{(simulation.beamDiagnostics.beamDivergenceAMrad * 1e3).toFixed(3)} / {(simulation.beamDiagnostics.beamDivergenceBMrad * 1e3).toFixed(3)} mrad</strong></span>
-            <span>QUADRUPOLE / BETA*<strong>{simulation.beamDiagnostics.quadrupoleGradientTM.toFixed(1)} T/m / {simulation.beamDiagnostics.betaStarM.toFixed(3)} m</strong></span>
+            <span>QUADRUPOLE / BETA* A·B<strong>{simulation.beamDiagnostics.quadrupoleGradientTM.toFixed(1)} T/m / {simulation.beamDiagnostics.betaStarAM.toFixed(3)} · {simulation.beamDiagnostics.betaStarBM.toFixed(3)} m</strong></span>
+            <span>NORMALIZED QUADRUPOLE STRENGTH A·B<strong>{simulation.beamDiagnostics.normalizedQuadrupoleStrengthAM.toFixed(3)} / {simulation.beamDiagnostics.normalizedQuadrupoleStrengthBM.toFixed(3)} m⁻²</strong></span>
             <span>BUNCH POPULATION A / B<strong>{simulation.beamDiagnostics.bunchPopulationA.toExponential(2)} / {simulation.beamDiagnostics.bunchPopulationB.toExponential(2)}</strong></span>
             <span>BUNCH SPACING / EFFECTIVE COUNT<strong>{simulation.beamDiagnostics.bunchSpacingNs} ns / {simulation.beamDiagnostics.numberOfBunches.toLocaleString()}</strong></span>
             <span>BUNCH CROSSINGS / SECOND<strong>{simulation.beamDiagnostics.bunchCollisionFrequencyHz.toLocaleString(undefined, { maximumFractionDigits: 0 })} Hz</strong></span>
             <span>MODEL LUMINOSITY<strong>{simulation.beamDiagnostics.luminosityAvailable ? `${simulation.beamDiagnostics.luminosityCm2S.toExponential(2)} cm⁻²s⁻¹` : 'N/A FOR BEAM CONFIG'}</strong></span>
             <span>ORBIT / STABILITY<strong>{simulation.beamDiagnostics.orbitOffsetMm.toFixed(3)} mm / {simulation.beamDiagnostics.stabilityPercent.toFixed(1)}%</strong></span>
+            <span>VACUUM / CRYOGENICS<strong>{simulation.beamDiagnostics.vacuumPressureMbar.toExponential(1)} mbar / {simulation.beamDiagnostics.cryogenicTemperatureK.toFixed(2)} K</strong></span>
+            <span>OPTICS / ENVIRONMENT PENALTY<strong>{simulation.beamDiagnostics.opticsMismatchPercent.toFixed(1)}% / {(simulation.beamDiagnostics.vacuumStabilityPenaltyPercent + simulation.beamDiagnostics.cryogenicStabilityPenaltyPercent).toFixed(2)}%</strong></span>
             <span>CENTRE-OF-MASS ENERGY (√s)<strong>{simulation.beamDiagnostics.centerOfMassEnergyGeV.toFixed(3)} GeV</strong></span>
-            <span>FIELD LIMIT / ORBIT STATUS<strong>{simulation.beamDiagnostics.fieldLimited ? 'FIELD LIMITED' : 'FIELD OK'} · {simulation.beamDiagnostics.orbitCorrectionNeeded ? 'CORRECTION CHECK' : 'ORBIT OK'}</strong></span>
+            <span>FIELD LIMIT / ORBIT STATUS<strong>{simulation.beamDiagnostics.fieldLimited ? 'FIELD LIMITED' : 'FIELD OK'} · {simulation.beamDiagnostics.orbitCorrectionActive ? 'AUTO-CORRECTED' : simulation.beamDiagnostics.orbitCorrectionNeeded ? 'CORRECTION CHECK' : 'ORBIT OK'}</strong></span>
           </div>
         </section>
         <section className="console-bank beam-diagnostic-bank beam-speed-bank">
@@ -306,6 +325,19 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
           </div>
         </section>
       </div>
+
+      <section className="machine-telemetry-panel" aria-label="Machine physics fill telemetry">
+        <header className="machine-telemetry-heading">
+          <div><span className="section-kicker">ENGINEERING CONSOLE / FILL HISTORY</span><h3>Machine Physics Telemetry</h3></div>
+          <span>{simulation.telemetryHistory.length ? 'LOCAL SIMULATED FILL · SAMPLED' : 'WAITING FOR A SIMULATED FILL'}</span>
+        </header>
+        <p>Separate axes and units are shown for each modeled signal. Vacuum and cryogenic conditions feed the stability estimate; dipole rigidity and quadrupole strength feed the beam optics. These are local model traces, not CERN telemetry.</p>
+        <div className="machine-telemetry-grid">
+          {telemetryMetrics.map((metric) => (
+            <MachineTelemetryChart key={metric.key} history={simulation.telemetryHistory} metric={metric} />
+          ))}
+        </div>
+      </section>
 
       <p className="operation-disclaimer">
         Educational control model only. These controls configure local simulated beam parameters and do not represent CERN settings or live telemetry. No accelerator hardware is connected.

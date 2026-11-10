@@ -3,12 +3,72 @@ import { buildDimuonCandidates } from '../physics/beam-physics.js'
 
 const CMS_FIELD_T = 3.8
 const MUON_MASS_GEV = 0.1056583755
+const TRANSVERSE_TRACK_RESOLUTION_MM = 0.015
+const LONGITUDINAL_TRACK_RESOLUTION_MM = 45
+const BEAM_SPOT_CONSTRAINT_MM = 0.015
 
 function createRandom(seed) {
   let state = (seed >>> 0) || 1
   return () => {
     state = (state * 1664525 + 1013904223) >>> 0
     return state / 0x100000000
+  }
+}
+
+function gaussian(random) {
+  const first = Math.max(random(), Number.EPSILON)
+  return Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * random())
+}
+
+function fitPrimaryVertex(particles) {
+  const tracks = particles.filter((particle) =>
+    particle.charge !== 0 && particle.trackMeasurement)
+  const beamSpotWeight = 1 / BEAM_SPOT_CONSTRAINT_MM ** 2
+  let xx = beamSpotWeight
+  let xy = 0
+  let yy = beamSpotWeight
+  let xRight = 0
+  let yRight = 0
+
+  for (const track of tracks) {
+    const phi = track.direction
+    const normalX = -Math.sin(phi)
+    const normalY = Math.cos(phi)
+    const weight = 1 / track.trackMeasurement.transverseUncertaintyMm ** 2
+    const measuredImpactParameter = track.trackMeasurement.transverseImpactParameterMm
+    xx += weight * normalX ** 2
+    xy += weight * normalX * normalY
+    yy += weight * normalY ** 2
+    xRight += weight * normalX * measuredImpactParameter
+    yRight += weight * normalY * measuredImpactParameter
+  }
+
+  const determinant = xx * yy - xy ** 2
+  const zWeight = tracks.reduce(
+    (sum, track) => sum + 1 / track.trackMeasurement.longitudinalUncertaintyMm ** 2,
+    0,
+  )
+  const zRight = tracks.reduce(
+    (sum, track) => sum
+      + track.trackMeasurement.longitudinalImpactParameterMm
+        / track.trackMeasurement.longitudinalUncertaintyMm ** 2,
+    0,
+  )
+  const hasTrackFit = tracks.length >= 2 && determinant > 0 && zWeight > 0
+
+  return {
+    available: hasTrackFit,
+    xMm: hasTrackFit ? (xRight * yy - yRight * xy) / determinant : null,
+    yMm: hasTrackFit ? (yRight * xx - xRight * xy) / determinant : null,
+    zMm: hasTrackFit ? zRight / zWeight : null,
+    resolutionMm: {
+      transverseX: hasTrackFit ? Math.sqrt(yy / determinant) : null,
+      transverseY: hasTrackFit ? Math.sqrt(xx / determinant) : null,
+      longitudinal: hasTrackFit ? Math.sqrt(1 / zWeight) : null,
+    },
+    tracksUsed: tracks.length,
+    method: 'Weighted educational fit of reconstructed track impact parameters with a beam-spot constraint',
+    status: hasTrackFit ? 'FITTED' : 'INSUFFICIENT_TRACKS',
   }
 }
 
@@ -65,6 +125,15 @@ function createRecoParticle(particle, index, random, fieldTesla, efficiencyScale
   const phi = Math.atan2(py, px)
   const eta = transverseMomentum > 0 ? Math.asinh(pz / transverseMomentum) : null
   const radiusM = particle.charge ? transverseMomentum / (0.299792458 * Math.max(fieldTesla, 0.1) * Math.abs(particle.charge)) : null
+  const trackMeasurement = particle.charge !== 0 && ['Muon', 'Electron'].includes(particle.type)
+    ? {
+      transverseImpactParameterMm: gaussian(random) * TRANSVERSE_TRACK_RESOLUTION_MM,
+      longitudinalImpactParameterMm: gaussian(random) * LONGITUDINAL_TRACK_RESOLUTION_MM,
+      transverseUncertaintyMm: TRANSVERSE_TRACK_RESOLUTION_MM,
+      longitudinalUncertaintyMm: LONGITUDINAL_TRACK_RESOLUTION_MM,
+      source: 'simulated detector track measurement; not present in the CMS source record',
+    }
+    : null
 
   return {
     ...particle,
@@ -82,6 +151,7 @@ function createRecoParticle(particle, index, random, fieldTesla, efficiencyScale
     truthParticleId: particle.id,
     truthEnergyGeV: particle.energy,
     trackCurvatureRadiusM: radiusM,
+    ...(trackMeasurement ? { trackMeasurement } : {}),
     reconstructionLevel: 'CMS-inspired educational response',
   }
 }
@@ -158,14 +228,7 @@ export function simulateDetectorResponse(event, {
     }
   })
 
-  const vertexRandom = createRandom(seed * 31 + 17)
-  const reconstructedVertex = {
-    xMm: (vertexRandom() - 0.5) * 0.03,
-    yMm: (vertexRandom() - 0.5) * 0.03,
-    zMm: (vertexRandom() - 0.5) * 90,
-    resolutionMm: { transverse: 0.015, longitudinal: 45 },
-    tracksUsed: particles.filter((particle) => particle.charge !== 0).length,
-  }
+  const reconstructedVertex = fitPrimaryVertex(particles)
   const quality = Math.max(0, Math.min(100,
     100 * particles.length / Math.max(responseInputParticles.length, 1)))
   const reconstructedDimuonMass = buildDimuonCandidates({ particles })
@@ -193,6 +256,8 @@ export function simulateDetectorResponse(event, {
       resampledRecordedReconstruction: true,
       detectorSmearingApplied: true,
       detectorEfficiencyApplied: true,
+      reconstructedVertexUsesTrackFit: true,
+      reconstructedVertexUsesSimulatedTrackMeasurements: true,
       missingTransverseMomentumIsReconstructed: true,
       missingTransverseMomentumFullEventCoverage: false,
     },
