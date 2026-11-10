@@ -4,6 +4,7 @@ import { environmentDefaults } from '../environment/systems'
 import { createStartupSystems, startupProcedure } from './startup-procedure'
 import { chooseRunningIncident, chooseStartupFailure, createIncident } from './incidents'
 import { calculateBeamDiagnostics, calculateRfRampEnergyGeV } from '../physics/beam-physics'
+import { advanceProcessedEventCounter } from './event-counter'
 import { simulateDetectorResponse } from '../detector/response'
 
 const defaultBeam = {
@@ -108,6 +109,7 @@ export function createSimulationEngine() {
   let transition = null
   let procedureInterval = null
   let historyClock = 0
+  let processedEventRemainder = 0
   let runningIncidentElapsedMs = 0
   let endFillAtNextEvent = false
   let autoDumpAtBoundary = false
@@ -242,6 +244,11 @@ export function createSimulationEngine() {
       },
       computing: { ...state.environment.computing, load: Math.min(96, 22 + state.collisions * 0.4) },
     }
+    const processingEvents = ['COLLISIONS', 'STANDALONE_RUN'].includes(state.operationPhase)
+    const processedEventCounter = processingEvents
+      ? advanceProcessedEventCounter(state.events, processedEventRemainder, elapsed, state.speed)
+      : { count: state.events, remainder: 0 }
+    processedEventRemainder = processedEventCounter.remainder
     historyClock += elapsed
     const energyHistory = historyClock > 140
       ? [...state.energyHistory, { time: nextTime, energy: beamEnergy }].slice(-48)
@@ -263,7 +270,7 @@ export function createSimulationEngine() {
       ...state,
       environment,
       time: nextTime,
-      events: state.events + (['COLLISIONS', 'STANDALONE_RUN'].includes(state.operationPhase) ? Math.floor(elapsed * state.speed * 0.04) : 0),
+      events: processedEventCounter.count,
       fps: Math.round(1000 / Math.max(elapsed, 16)),
       beamActivity: Math.min(1, state.beamActivity + elapsed * 0.001),
       beamStability: beamDiagnostics.stabilityPercent,

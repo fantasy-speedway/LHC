@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { particleOptions } from '../beam/particles'
+import { applyBeamPreset, beamPresets } from '../beam/presets'
 import { calculateBeamDiagnostics } from '../physics/beam-physics'
 import BeamEnergyGraph from './BeamEnergyGraph'
 import MachineTelemetryChart from './MachineTelemetryChart'
@@ -169,6 +170,7 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
   const [draftBeam, setDraftBeam] = useState(simulation.beam)
   const [activeChannel, setActiveChannel] = useState(null)
   const [applyProgress, setApplyProgress] = useState(0)
+  const [selectedPreset, setSelectedPreset] = useState('')
   const intervalRef = useRef(null)
   const timeoutRef = useRef(null)
 
@@ -184,7 +186,9 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
   const applyChannel = (channel) => {
     if (controlsLocked || activeChannel) return
 
-    const channelKeys = channel === 'A'
+    const channelKeys = channel === 'PRESET'
+      ? Object.keys(draftBeam)
+      : channel === 'A'
       ? ['particleType', 'targetEnergy', 'intensity', 'particleCount', 'direction']
       : channel === 'B'
         ? ['particleTypeB', 'targetEnergyB', 'intensityB', 'particleCountB', 'directionB']
@@ -206,6 +210,11 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
       setActiveChannel(null)
       setApplyProgress(0)
     }, CONFIG_LOAD_MS)
+  }
+
+  const stagePreset = (presetId) => {
+    setSelectedPreset(presetId)
+    if (presetId) setDraftBeam((current) => applyBeamPreset(current, presetId))
   }
 
   const statusLabel = simulation.status === 'BEAM RAMP BELOW TARGET'
@@ -233,6 +242,34 @@ export default function BeamControlView({ simulation, onBeamChange, onSpeed }) {
         <div className="collision-source-controls">
           <p>Every simulated event is resampled from the recorded CMS J/ψ→μ⁺μ⁻ dataset and passed through the educational detector-response model. The recorded template is identified in Event Display. This selected sample supports dimuon-like resampling only; its measured momenta are not scaled or relabeled as events at the configured beam energy.</p>
         </div>
+      </section>
+
+      <section className="console-bank beam-preset-bank" aria-label="Beam operating presets">
+        <header><span><b>00A.</b> BEAM OPERATING PRESETS</span><small>{selectedPreset ? 'PRESET STAGED' : 'SELECT A REFERENCE'}</small></header>
+        <div className="beam-preset-controls">
+          <label htmlFor="beam-preset-select">REFERENCE CONFIGURATION
+            <select
+              id="beam-preset-select"
+              disabled={controlsLocked || activeChannel !== null}
+              value={selectedPreset}
+              onChange={(event) => stagePreset(event.target.value)}
+            >
+              <option value="">Choose a beam preset</option>
+              {beamPresets.map((preset) => (
+                <option key={preset.id} value={preset.id}>{preset.label} · {preset.description}</option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={!selectedPreset || controlsLocked || activeChannel !== null}
+            onClick={() => applyChannel('PRESET')}
+          >
+            {activeChannel === 'PRESET' ? `LOADING PRESET · ${Math.round(applyProgress * 100)}%` : 'LOAD PRESET · 5 SEC MODEL'}
+          </button>
+          {activeChannel === 'PRESET' && <progress max="1" value={applyProgress} aria-label="Beam preset loading progress" />}
+        </div>
+        <p>Presets stage both beams, magnet field, quadrupole, and RF settings together. Loading applies them to the local machine model; the collision stream remains resampled CMS 2010 J/ψ→μ⁺μ⁻ data and is not generated at this configured energy.</p>
       </section>
 
       <div className="console-readout-strip" aria-label="Live beam channel readouts">
