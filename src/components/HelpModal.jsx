@@ -37,7 +37,7 @@ export default function HelpModal({ onClose }) {
             <dl>
               <dt><kbd>F</kbd></dt><dd>Toggle fullscreen control room.</dd>
               <dt><kbd>?</kbd></dt><dd>Open this quick guide.</dd>
-              <dt><kbd>1 - 4</kbd></dt><dd>Switch Overview, Detector, Event Display, or Experiments.</dd>
+              <dt><kbd>1 - 3</kbd></dt><dd>Switch Overview, Detector, or Event Display.</dd>
             </dl>
           </div>
         </div>

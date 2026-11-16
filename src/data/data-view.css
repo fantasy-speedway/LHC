@@ -4,6 +4,10 @@
 .research-status { color: var(--cyan); font-size: 8px; line-height: 1.5; }
 .note-form select { min-width: 0; border: 1px solid #29454b; background: #091419; color: var(--ink); padding: 8px; font: 8px 'IBM Plex Mono'; }
 .research-history > .data-section-header { margin-bottom: 12px; }
+.data-page .event-history-pagination { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+.data-page .event-history-pagination button { min-height: 40px; border: 1px solid #315057; background: #0d1a20; color: var(--cyan); padding: 8px 10px; cursor: pointer; }
+.data-page .event-history-pagination button:disabled { opacity: .45; cursor: not-allowed; }
+.data-page .event-history-pagination span { color: #b7c5c2; font-size: 12px; }
 .research-datasets { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 7px; }
 .research-datasets > div { display: grid; gap: 5px; min-width: 0; border: 1px solid var(--line); background: #091419; padding: 9px; }
 .research-datasets span, .research-datasets small { color: var(--muted); font-size: 7px; }

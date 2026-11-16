@@ -6,7 +6,7 @@ import { chooseRunningIncident, chooseStartupFailure, createIncident } from './i
 import { calculateBeamDiagnostics, calculateRfRampEnergyGeV } from '../physics/beam-physics'
 import { advanceProcessedEventCounter } from './event-counter'
 import { simulateDetectorResponse } from '../detector/response'
-import { loadCollisionHistory, saveCollisionHistory } from './collision-history'
+import { appendCollisionEvent, loadCollisionHistory } from './collision-history'
 
 const defaultBeam = {
   particleType: 'proton',
@@ -106,25 +106,14 @@ const initialState = {
 }
 
 export function createSimulationEngine() {
-  let restoredHistory
-  let historyLoadError = null
-  try {
-    restoredHistory = loadCollisionHistory()
-  } catch (error) {
-    restoredHistory = { collisions: 0, detectedParticles: 0, averageEventEnergy: 0, events: [] }
-    historyLoadError = error instanceof Error ? error.message : String(error)
-  }
   const sessionId = globalThis.crypto?.randomUUID?.()
     ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
   let state = {
     ...initialState,
-    collisions: restoredHistory.collisions,
-    detectedParticles: restoredHistory.detectedParticles,
-    averageEventEnergy: restoredHistory.averageEventEnergy,
-    eventHistory: restoredHistory.events,
-    latestCollision: restoredHistory.events.at(-1) ?? null,
-    collisionHistoryError: historyLoadError,
+    collisionHistoryError: null,
   }
+  let historyReady = false
+  let historyWrite = Promise.resolve()
   let frame = null
   let transition = null
   let procedureInterval = null
@@ -139,6 +128,25 @@ export function createSimulationEngine() {
     state = { ...state, ...next }
     notify()
   }
+  loadCollisionHistory().then((history) => {
+    state = {
+      ...state,
+      collisions: history.collisions,
+      detectedParticles: history.detectedParticles,
+      averageEventEnergy: history.averageEventEnergy,
+      eventHistory: history.events,
+      latestCollision: history.events.at(-1) ?? null,
+    }
+    historyReady = true
+    notify()
+  }).catch((error) => {
+    state = {
+      ...state,
+      collisionHistoryError: error instanceof Error ? error.message : String(error),
+    }
+    historyReady = true
+    notify()
+  })
   const stopFrame = () => {
     if (frame !== null) cancelAnimationFrame(frame)
     frame = null
@@ -318,7 +326,7 @@ export function createSimulationEngine() {
       }
     }
 
-    if (collisionsActive && nextTime >= state.nextCollisionTime) {
+    if (collisionsActive && historyReady && nextTime >= state.nextCollisionTime) {
       const collision = createCollisionEvent({
         eventNumber: state.collisions + 1,
         time: nextTime,
@@ -338,27 +346,20 @@ export function createSimulationEngine() {
         id: `sim-${sessionId}-${state.collisions + 1}`,
         simulationSessionId: sessionId,
       }
-      const eventHistory = [...state.eventHistory, collisionWithContext].slice(-18)
+      const eventHistory = [...state.eventHistory, collisionWithContext]
       const collisions = state.collisions + 1
       const detectedParticles = state.detectedParticles + collisionWithContext.detectedParticles
       const averageEventEnergy = ((state.averageEventEnergy * state.collisions) + collisionWithContext.totalEnergy) / collisions
-      let collisionHistoryError = null
-      try {
-        saveCollisionHistory({
+      const collisionSummary = {
           collisions,
           detectedParticles,
           averageEventEnergy,
-          events: eventHistory,
-        })
-      } catch (error) {
-        collisionHistoryError = error instanceof Error ? error.message : String(error)
       }
       nextState = {
         ...nextState,
         collisions,
         detectedParticles,
         averageEventEnergy,
-        collisionHistoryError,
         collisionRate: collisions / Math.max(nextTime, 0.1),
         eventHistory,
         latestCollision: collisionWithContext,
@@ -376,6 +377,14 @@ export function createSimulationEngine() {
           ? 'End-of-fill request reached an event boundary. Collisions have stopped; beams remain in stable circulation.'
           : `${collision.label} resampled from CERN CMS data and passed through the educational detector-response model.`,
       }
+      historyWrite = historyWrite
+        .catch(() => {})
+        .then(() => appendCollisionEvent(collisionWithContext, collisionSummary))
+      historyWrite.then(() => {
+        if (state.collisionHistoryError) setState({ collisionHistoryError: null })
+      }).catch((error) => {
+        setState({ collisionHistoryError: error instanceof Error ? error.message : String(error) })
+      })
 
       if (endFillAtNextEvent) {
         endFillAtNextEvent = false

@@ -3,6 +3,8 @@ import { buildDetectorResponse } from '../detector/model'
 import DetectorCanvas from './DetectorCanvas'
 import '../collision/collision-view.css'
 
+const historyPageSize = 50
+
 function formatDirection(direction) {
   return `${Math.round((direction * 180) / Math.PI)}°`
 }
@@ -16,6 +18,7 @@ function getEventDuration(event) {
 
 export default function CollisionView({ simulation }) {
   const [eventId, setEventId] = useState(null)
+  const [historyPage, setHistoryPage] = useState(0)
   const [selectedParticleId, setSelectedParticleId] = useState(null)
   const [playing, setPlaying] = useState(true)
   const [animationTime, setAnimationTime] = useState(2.6)
@@ -31,6 +34,9 @@ export default function CollisionView({ simulation }) {
   const eventIndex = event ? simulation.eventHistory.findIndex((item) => item.id === event.id) : -1
   const isCernEvent = event?.dataOrigin === 'CERN Open Data'
   const isDataInformedEvent = event?.eventMode === 'DATA_INFORMED_SIMULATION'
+  const historyEvents = simulation.eventHistory.slice().reverse()
+  const historyPageCount = Math.max(1, Math.ceil(historyEvents.length / historyPageSize))
+  const visibleHistory = historyEvents.slice(historyPage * historyPageSize, (historyPage + 1) * historyPageSize)
 
   const loadEvent = (id) => {
     setEventId(id)
@@ -78,7 +84,7 @@ export default function CollisionView({ simulation }) {
         <div>
           <span className="section-kicker">COLLISIONS / DETECTOR PLAYBACK</span>
           <h3>Live Collision Chamber</h3>
-          <p>Replay the current event through a layered detector view. For CERN record IDs, priority review, and saving labels, use Event Display.</p>
+          <p>Replay the current event through a layered detector view. The stream reuses the selected CMS J/ψ→μ⁺μ⁻ sample, so two muons are expected; it does not represent every particle from general LHC collisions. For CERN record IDs, priority review, and saving labels, use Event Display.</p>
         </div>
         <div className="collision-lab-state">
           <span>{event?.dataOrigin ?? 'EVENT STREAM'}</span>
@@ -195,9 +201,9 @@ export default function CollisionView({ simulation }) {
         )) : <div className="particle-table-empty">Start collisions to create a data-informed event from the recorded CMS dimuon sample.</div>}
       </section>
       <section className="collision-history-panel">
-        <div className="section-heading">RECENT EVENTS <span>{simulation.eventHistory.length} RETAINED</span></div>
+        <div className="section-heading">COLLISION HISTORY <span>{simulation.eventHistory.length} STORED IN THIS BROWSER</span></div>
         <div className="collision-history-list">
-          {simulation.eventHistory.slice().reverse().map((historyEvent) => (
+          {visibleHistory.map((historyEvent) => (
             <button className={event?.id === historyEvent.id ? 'collision-history-row active' : 'collision-history-row'} onClick={() => loadEvent(historyEvent.id)} key={historyEvent.id}>
               <b>{historyEvent.label}</b>
               <span>{historyEvent.time.toFixed(3)} ns</span>
@@ -205,6 +211,11 @@ export default function CollisionView({ simulation }) {
               <strong>{historyEvent.interestingScore == null ? '—' : `${historyEvent.interestingScore}/100`}</strong>
             </button>
           ))}
+        </div>
+        <div className="event-history-pagination" aria-label="Collision history pages">
+          <button type="button" onClick={() => setHistoryPage((page) => page + 1)} disabled={historyPage + 1 >= historyPageCount}>OLDER EVENTS</button>
+          <span>PAGE {historyPage + 1} / {historyPageCount}</span>
+          <button type="button" onClick={() => setHistoryPage((page) => Math.max(0, page - 1))} disabled={historyPage === 0}>NEWER EVENTS</button>
         </div>
       </section>
     </div>

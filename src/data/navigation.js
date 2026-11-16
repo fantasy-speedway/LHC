@@ -1,6 +1,6 @@
 export const navigationItems = [
   ['Overview', '⌂'], ['Collider', '◉'], ['Beam Control', '⇄'], ['Collision', '✦'], ['Detector', '◌'],
-  ['Event Display', '▦'], ['Analysis', '⌁'], ['Experiments', '▤'], ['Data', '⌘'], ['Discovery', '✧'], ['Settings', '⚙'], ['Help', '?'],
+  ['Event Display', '▦'], ['Analysis', '⌁'], ['Data', '⌘'], ['Discovery', '✧'], ['Settings', '⚙'], ['Help', '?'],
 ]
 
 export const telemetryRows = [

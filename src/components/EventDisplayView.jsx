@@ -6,6 +6,7 @@ import DetectorCanvas from './DetectorCanvas'
 import './event-display.css'
 
 const defaultDisplay = { showTracks: true, showEnergy: true, showLabels: true, showLayers: true, showParticleIds: true }
+const historyPageSize = 50
 
 function directionLabel(radians) {
   return `${Math.round((radians * 180) / Math.PI)}°`
@@ -30,6 +31,7 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
   const [playing, setPlaying] = useState(false)
   const [playbackRun, setPlaybackRun] = useState(0)
   const [query, setQuery] = useState('')
+  const [historyPage, setHistoryPage] = useState(0)
   const [savedArchive, setSavedArchive] = useState(readSavedCollisionArchive)
   const [reviewSelection, setReviewSelection] = useState(null)
   const savedEvents = savedArchive.events
@@ -149,11 +151,16 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
   const filteredHistory = simulation.eventHistory.slice().reverse().filter((event) =>
     `${event.label} ${event.sourceParticle} ${event.particles.map((particle) => particle.type).join(' ')}`
       .toLowerCase().includes(query.toLowerCase()))
+  const historyPageCount = Math.max(1, Math.ceil(filteredHistory.length / historyPageSize))
+  const visibleHistory = filteredHistory.slice(historyPage * historyPageSize, (historyPage + 1) * historyPageSize)
+  const unavailableLegacyEvents = Math.max(0, simulation.collisions - simulation.eventHistory.length)
+
+  useEffect(() => setHistoryPage(0), [query])
 
   return (
     <div className="event-display-view">
       <div className="event-display-toolbar">
-        <div><span className="section-kicker">EVENT DISPLAY / PROVENANCE REVIEW</span><h3>Recorded and Data-Informed Events</h3></div>
+        <div><span className="section-kicker">EVENT DISPLAY / PROVENANCE REVIEW</span><h3>Recorded and Data-Informed Events</h3><p>This stream is a selected CMS J/ψ→μ⁺μ⁻ sample. Two muons are expected; it does not represent the full particle content of general LHC collisions.</p></div>
         <div className="event-display-actions">
           <button className="save-event" onClick={saveEvent} disabled={!currentEvent}>{savedRecord ? '✓ SAVED' : '⇩ SAVE EVENT'}</button>
           <span>{currentEvent?.label ?? 'NO EVENT LOADED'}</span>
@@ -283,12 +290,13 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
       </div>
       <div className="event-history-panel">
         <div className="history-panel-header">
-          <div><span className="section-kicker">ARCHIVE / COLLISION RECORDS</span><h4>Event History</h4><p>{simulation.collisions} total collisions · latest {simulation.eventHistory.length} retained in this browser</p></div>
+          <div><span className="section-kicker">ARCHIVE / COLLISION RECORDS</span><h4>Event History</h4><p>{simulation.collisions} total collisions · {simulation.eventHistory.length} records loaded from this browser</p></div>
           <input value={query} onChange={(input) => setQuery(input.target.value)} placeholder="Search events, particles..." aria-label="Search events" />
         </div>
+        <p className="history-range">Showing {filteredHistory.length ? historyPage * historyPageSize + 1 : 0}–{Math.min((historyPage + 1) * historyPageSize, filteredHistory.length)} of {filteredHistory.length} matching events · stored in this browser without an application-imposed history cap{unavailableLegacyEvents > 0 ? ` · ${unavailableLegacyEvents} earlier events were already absent from the previous limited archive and cannot be recovered` : ''}</p>
         <div className="event-history-table">
           <div className="event-table-head"><span>EVENT ID</span><span>TIME</span><span>PARTICLES</span><span>INVARIANT MASS</span><span>PRIORITY</span></div>
-          {filteredHistory.length ? filteredHistory.map((historyEvent) => (
+          {visibleHistory.length ? visibleHistory.map((historyEvent) => (
             <button className={currentEvent?.id === historyEvent.id ? 'event-table-row active' : 'event-table-row'} onClick={() => selectEvent(historyEvent.id)} key={historyEvent.id}>
               <b>{historyEvent.label}</b>
               <span>{historyEvent.time.toFixed(3)} ns</span>
@@ -299,6 +307,11 @@ export default function EventDisplayView({ simulation, initialEventId = null }) 
               </strong>
             </button>
           )) : <div className="history-empty">No events match the current search.</div>}
+        </div>
+        <div className="event-history-pagination" aria-label="Collision history pages">
+          <button type="button" onClick={() => setHistoryPage((page) => page + 1)} disabled={historyPage + 1 >= historyPageCount}>OLDER EVENTS</button>
+          <span>PAGE {historyPage + 1} / {historyPageCount}</span>
+          <button type="button" onClick={() => setHistoryPage((page) => Math.max(0, page - 1))} disabled={historyPage === 0}>NEWER EVENTS</button>
         </div>
       </div>
     </div>

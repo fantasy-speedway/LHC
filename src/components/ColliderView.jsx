@@ -26,7 +26,7 @@ export default function ColliderView({ simulation, onSpeed, onNavigate, injector
         <div className="collider-page-metrics">
           <span>STATUS<strong className={running ? 'green' : ''}>{simulation.status}</strong></span>
           <span>TIME<strong>{simulation.time.toFixed(3)} ns</strong></span>
-          <span>EXPERIMENT<strong>{simulation.experimentId}</strong></span>
+          <span>RUN ID<strong>{simulation.experimentId}</strong></span>
           <span>EVENT COUNT<strong>{simulation.events.toLocaleString()}</strong></span>
           <span>MODEL HEALTH<strong className="green">98.7%</strong></span>
         </div>

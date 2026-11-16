@@ -6,7 +6,6 @@ import Sidebar from "./components/Sidebar";
 import TelemetryPanel from "./components/TelemetryPanel";
 import DetectorView from "./components/DetectorView";
 import EventDisplayView from "./components/EventDisplayView";
-import ExperimentBuilder from "./components/ExperimentBuilder";
 import ColliderView from "./components/ColliderView";
 import BeamControlView from "./components/BeamControlView";
 import CollisionView from "./components/CollisionView";
@@ -127,7 +126,6 @@ function App() {
         1: "Overview",
         2: "Detector",
         3: "Event Display",
-        4: "Experiments",
       };
       if (views[event.key]) setActiveView(views[event.key]);
     };
@@ -170,7 +168,7 @@ function App() {
             </strong>
           </div>
           <div className="top-metric">
-            <span className="metric-label">EXPERIMENT ID</span>
+            <span className="metric-label">RUN ID</span>
             <strong className="mono">{simulation.experimentId}</strong>
           </div>
           <div className="top-metric performance-metric">
@@ -288,8 +286,6 @@ function App() {
             />
           ) : activeView === "Event Display" ? (
             <EventDisplayView key={analysisEventId ?? "live-event"} simulation={simulation} initialEventId={analysisEventId} />
-          ) : activeView === "Experiments" ? (
-            <ExperimentBuilder engine={engine} />
           ) : (
             <div className="unavailable-view">
               <span className="section-kicker">NAVIGATION / PAGE NOT FOUND</span>

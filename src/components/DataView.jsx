@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { loadCompletedExperiments, deleteCompletedExperiment } from '../experiments/storage'
 import { detectorLayers } from '../detector/model'
 import { classifyCollisionPriority, priorityDetails } from '../collision/classification'
@@ -16,6 +16,7 @@ import {
 import '../data/data-view.css'
 
 const csvEscape = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`
+const eventPageSize = 50
 const download = (filename, content, type = 'text/csv') => {
   const url = URL.createObjectURL(new Blob([content], { type }))
   const anchor = document.createElement('a')
@@ -50,6 +51,7 @@ export default function DataView({ simulation }) {
   const { collisions: savedCollisions, error: archiveError } = savedArchive
   const [query, setQuery] = useState('')
   const [eventQuery, setEventQuery] = useState('')
+  const [eventPage, setEventPage] = useState(0)
   const [particleType, setParticleType] = useState('ALL')
   const [sortKey, setSortKey] = useState('date')
   const [sortDirection, setSortDirection] = useState('desc')
@@ -79,6 +81,8 @@ export default function DataView({ simulation }) {
   const notes = notebookState.notes
   const { projects, reports, collections } = researchRecords
 
+  useEffect(() => setEventPage(0), [eventQuery])
+
   const allEvents = useMemo(() => {
     const uniqueEvents = [
       ...simulation.eventHistory.map((event) => ({ ...event, experiment: 'CURRENT RUN / DATA-INFORMED SIMULATION' })),
@@ -103,7 +107,9 @@ export default function DataView({ simulation }) {
       const right = sortKey === 'name' ? b.name : b.completedAt ?? ''
       return (left > right ? 1 : -1) * (sortDirection === 'asc' ? 1 : -1)
     })
-  const visibleEvents = allEvents.filter((event) => event.label.toLowerCase().includes(eventQuery.toLowerCase()))
+  const visibleEvents = allEvents.filter((event) => event.label.toLowerCase().includes(eventQuery.toLowerCase())).reverse()
+  const eventPageCount = Math.max(1, Math.ceil(visibleEvents.length / eventPageSize))
+  const pageEvents = visibleEvents.slice(eventPage * eventPageSize, (eventPage + 1) * eventPageSize)
   const visibleSavedCollisions = savedCollisions.filter((event) =>
     `${event.label ?? ''} ${event.runNumber ?? ''} ${event.sourceEventNumber ?? ''}`.toLowerCase().includes(eventQuery.toLowerCase()))
   const experimentById = new Map(experiments.map((experiment) => [experiment.id, experiment]))
@@ -299,6 +305,24 @@ export default function DataView({ simulation }) {
     }
   }
 
+  const exportCollisionHistory = () => {
+    try {
+      const archive = {
+        format: 'lhc-generated-collision-history',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        totalCollisions: simulation.collisions,
+        detectedParticles: simulation.detectedParticles,
+        averageEventEnergy: simulation.averageEventEnergy,
+        events: simulation.eventHistory,
+      }
+      download('lhc-generated-collision-history.json', JSON.stringify(archive, null, 2), 'application/json')
+      setArchiveStatus('Generated collision history exported. Store the downloaded file as a backup.')
+    } catch (error) {
+      setArchiveStatus(`Could not export generated collision history: ${error.message}`)
+    }
+  }
+
   const experimentColumns = [
     { label: 'EXPERIMENT ID', value: (row) => row.id },
     { label: 'EXPERIMENT NAME', value: (row) => row.name },
@@ -377,13 +401,19 @@ export default function DataView({ simulation }) {
     </section>
 
     <section className="data-section">
-      <div className="data-section-header"><div><span className="section-kicker">02 / EXPERIMENT DATABASE</span><h4>Completed Experiments</h4></div><div className="data-tools"><input placeholder="Search experiments..." value={query} onChange={(event) => setQuery(event.target.value)} /><select value={sortKey} onChange={(event) => setSortKey(event.target.value)}><option value="date">SORT DATE</option><option value="name">SORT NAME</option></select><button onClick={() => setSortDirection((value) => value === 'asc' ? 'desc' : 'asc')}>{sortDirection === 'asc' ? '↑' : '↓'}</button></div></div>
-      <div className="data-table"><div className="data-row data-head">{experimentColumns.map((column) => <span key={column.label}>{column.label}</span>)}<span>ACTIONS</span></div>{visibleExperiments.map((experiment) => <div className="data-row" key={experiment.id}>{experimentColumns.map((column) => <span key={column.label}>{column.value(experiment)}</span>)}<span><button onClick={() => window.dispatchEvent(new CustomEvent('open-experiments'))}>OPEN</button><button className="danger" onClick={() => { deleteCompletedExperiment(experiment.id); refreshArchive() }}>DELETE</button></span></div>)}{!visibleExperiments.length && <div className="data-empty">No completed experiments in persistent storage.</div>}</div>
+      <div className="data-section-header"><div><span className="section-kicker">02 / LEGACY RUN ARCHIVE</span><h4>Archived Simulation Runs</h4></div><div className="data-tools"><input placeholder="Search archived runs..." value={query} onChange={(event) => setQuery(event.target.value)} /><select value={sortKey} onChange={(event) => setSortKey(event.target.value)}><option value="date">SORT DATE</option><option value="name">SORT NAME</option></select><button onClick={() => setSortDirection((value) => value === 'asc' ? 'desc' : 'asc')}>{sortDirection === 'asc' ? '↑' : '↓'}</button></div></div>
+      <div className="data-table"><div className="data-row data-head">{experimentColumns.map((column) => <span key={column.label}>{column.label}</span>)}<span>ACTIONS</span></div>{visibleExperiments.map((experiment) => <div className="data-row" key={experiment.id}>{experimentColumns.map((column) => <span key={column.label}>{column.value(experiment)}</span>)}<span><button className="danger" onClick={() => { deleteCompletedExperiment(experiment.id); refreshArchive() }}>DELETE</button></span></div>)}{!visibleExperiments.length && <div className="data-empty">No archived simulation runs in persistent storage.</div>}</div>
     </section>
 
     <section className="data-section">
       <div className="data-section-header"><div><span className="section-kicker">03 / EVENT DATABASE</span><h4>Collision Events</h4></div><input placeholder="Search Event ID..." value={eventQuery} onChange={(event) => setEventQuery(event.target.value)} /></div>
-      <div className="data-table"><div className="data-row data-head">{eventColumns.map((column) => <span key={column.label}>{column.label}</span>)}</div>{visibleEvents.slice().reverse().map((event) => <button className="data-row data-button" key={`${event.experiment}-${event.id}`} onClick={() => window.dispatchEvent(new CustomEvent('open-event-display', { detail: event.id }))}>{eventColumns.map((column) => <span className={column.label === 'PRIORITY' ? `priority-text priority-${classifyCollisionPriority(event).priority.toLowerCase()}` : ''} key={column.label}>{column.value(event)}</span>)}</button>)}{!visibleEvents.length && <div className="data-empty">No event records match the search.</div>}</div>
+      <p className="archive-note">Showing {visibleEvents.length ? eventPage * eventPageSize + 1 : 0}–{Math.min((eventPage + 1) * eventPageSize, visibleEvents.length)} of {visibleEvents.length} matching events.</p>
+      <div className="data-table"><div className="data-row data-head">{eventColumns.map((column) => <span key={column.label}>{column.label}</span>)}</div>{pageEvents.map((event) => <button className="data-row data-button" key={`${event.experiment}-${event.id}`} onClick={() => window.dispatchEvent(new CustomEvent('open-event-display', { detail: event.id }))}>{eventColumns.map((column) => <span className={column.label === 'PRIORITY' ? `priority-text priority-${classifyCollisionPriority(event).priority.toLowerCase()}` : ''} key={column.label}>{column.value(event)}</span>)}</button>)}{!visibleEvents.length && <div className="data-empty">No event records match the search.</div>}</div>
+      <div className="event-history-pagination" aria-label="Collision data pages">
+        <button type="button" onClick={() => setEventPage((page) => page + 1)} disabled={eventPage + 1 >= eventPageCount}>OLDER EVENTS</button>
+        <span>PAGE {eventPage + 1} / {eventPageCount}</span>
+        <button type="button" onClick={() => setEventPage((page) => Math.max(0, page - 1))} disabled={eventPage === 0}>NEWER EVENTS</button>
+      </div>
     </section>
 
     <section className="data-section">
@@ -459,9 +489,10 @@ export default function DataView({ simulation }) {
       </div>
     </section>
 
-    <section className="data-export"><div><span className="section-kicker">EXPORT / DATA PRODUCTS</span><h4>Export Data</h4><p>Browser storage is device-specific. Keep a research archive backup to move or restore records.</p>{archiveStatus && <p className="research-status" role="status">{archiveStatus}</p>}</div><div>
+    <section className="data-export"><div><span className="section-kicker">EXPORT / DATA PRODUCTS</span><h4>Export Data</h4><p>Browser storage is device-specific. Generated collision history and the research archive are separate files; export both for a complete backup.</p>{archiveStatus && <p className="research-status" role="status">{archiveStatus}</p>}</div><div>
       <button onClick={exportResearchArchive}>EXPORT COMPLETE RESEARCH ARCHIVE JSON</button>
       <label className="research-import">IMPORT / MERGE RESEARCH ARCHIVE JSON<input key={archiveInputKey} type="file" accept="application/json,.json" onChange={importResearchArchive} /></label>
+      <button onClick={exportCollisionHistory}>EXPORT ALL GENERATED COLLISIONS JSON</button>
       <button onClick={() => download('saved-collisions.json', JSON.stringify(savedCollisions, null, 2), 'application/json')}>EXPORT SAVED COLLISIONS JSON</button>
       <button onClick={() => download('saved-collisions.csv', toCsv(savedCollisions, savedCollisionCsvColumns))}>EXPORT SAVED COLLISIONS CSV</button>
       <button onClick={() => download('experiments.json', JSON.stringify(experiments, null, 2), 'application/json')}>EXPORT EXPERIMENT JSON</button>

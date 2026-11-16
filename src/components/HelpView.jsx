@@ -49,13 +49,13 @@ export default function HelpView({ onNavigate = () => {} }) {
           </li>
           <li>
             <span className="help-route-number">STEP 4</span>
-            <div><h5>Save your work</h5><p>The latest 18 generated collisions are retained in this browser automatically. Save important events or analysis reports, add research notes in Data, and export an archive for a backup or transfer.</p></div>
+            <div><h5>Save your work</h5><p>Generated collisions are retained in this browser automatically, with no application-imposed history limit. Save important events or analysis reports, add research notes in Data, and export an archive for a backup or transfer.</p></div>
             <button type="button" onClick={() => onNavigate('Data')}>OPEN DATA &amp; RESEARCH</button>
           </li>
         </ol>
         <details className="help-optional-simulation">
           <summary>Want to explore the machine simulation too?</summary>
-          <p>Open Overview and follow the staged controls. These model the accelerator procedure and do not operate CERN equipment. Simulated events reuse recorded CMS event templates with modeled response; they are not new measured collisions.</p>
+          <p>Open Overview and follow the staged controls. These model the accelerator procedure and do not operate CERN equipment. Simulated events reuse recorded CMS J/ψ→μ⁺μ⁻ templates with modeled response, so they show the selected dimuon channel rather than the full particle output of general LHC collisions. They are not new measured collisions.</p>
           <button type="button" onClick={() => onNavigate('Overview')}>OPEN OVERVIEW</button>
         </details>
       </section>
@@ -69,7 +69,7 @@ export default function HelpView({ onNavigate = () => {} }) {
         <div className="help-reading-grid">
           <article>
             <h5>1. Identify the source</h5>
-            <p><strong>CMS 2010 reference</strong> means recorded measurements from the bundled CERN Open Data sample. They are selected J/ψ→μ⁺μ⁻ records, not a complete record of every LHC collision.</p>
+            <p><strong>CMS 2010 reference</strong> means recorded measurements from the bundled CERN Open Data sample. It is specifically a selected J/ψ→μ⁺μ⁻ dimuon sample, so its two reconstructed particles are muons by design. It does not represent every particle or every type of LHC collision.</p>
             <p><strong>Data-informed simulation</strong> means the app reused a recorded CMS event as a template and added modeled detector response. It is not a new measured CERN event. <strong>Model</strong>, <strong>estimated</strong>, or <strong>simulated</strong> values describe the app’s educational calculations, not live CERN readings.</p>
           </article>
           <article>
@@ -167,7 +167,7 @@ export default function HelpView({ onNavigate = () => {} }) {
         <div className="help-steps">
           <article><b>01</b><div><h4>Operate and configure</h4><p><strong>Overview</strong> summarizes the run and owns the staged procedure. <strong>Collider</strong> is the interactive accelerator map. <strong>Beam Control</strong> provides separate Beam A/B configuration banks; stage values and press each channel’s load button for its timed apply.</p></div></article>
           <article><b>02</b><div><h4>Inspect detector and events</h4><p><strong>Detector</strong> lets you switch between separate ATLAS and CMS subsystem views. <strong>Collision</strong> shows the event playback chamber. <strong>Event Display</strong> is for source-event review, priority labels, and saved records.</p></div></article>
-          <article><b>03</b><div><h4>Study and manage data</h4><p><strong>Analysis</strong> provides plots and comparisons; <strong>Data</strong> manages saved records and exports; <strong>Discovery</strong> is the particle reference library; <strong>Experiments</strong> configures local runs; <strong>Settings</strong> changes session display preferences.</p></div></article>
+          <article><b>03</b><div><h4>Study and manage data</h4><p><strong>Analysis</strong> provides plots and comparisons; <strong>Data</strong> manages saved records and exports; <strong>Discovery</strong> is the particle reference library; <strong>Settings</strong> changes session display preferences.</p></div></article>
         </div>
       </section>
 
@@ -188,12 +188,12 @@ export default function HelpView({ onNavigate = () => {} }) {
         </div>
         <div className="help-topic">
           <h5>Analyze the CMS dimuon sample</h5>
-          <p>In <strong>Analysis</strong>, choose the CMS 2010 reference dataset or the current/archived workspace. Adjust the opposite-charge, pT, |eta|, and mass-window cuts; review the cutflow, histogram, and candidate table. Pair masses are recomputed from recorded four-vectors and shown separately from source CSV masses. The available plots cover pT, eta, azimuth, and dimuon candidates.</p>
+          <p>In <strong>Analysis</strong>, choose the CMS 2010 reference dataset or the collision-history workspace. Adjust the opposite-charge, pT, |eta|, and mass-window cuts; review the cutflow, histogram, and candidate table. Pair masses are recomputed from recorded four-vectors and shown separately from source CSV masses. The available plots cover pT, eta, azimuth, and dimuon candidates.</p>
           <p>The recorded CSV has no missing-pT measurement. Simulated pT imbalance uses selected muon tracks only; it is not full-event missing transverse momentum. The sideband S/B and S/√B estimates assume an unweighted, flat background and are not a validated CMS analysis or discovery significance.</p>
         </div>
         <div className="help-topic">
           <h5>Keep research records</h5>
-          <p>Save an Analysis report and optionally link it to a research project. In <strong>Data</strong>, create projects and event collections, save collisions to a collection, and connect notes to projects, experiments, and datasets. The research timeline joins projects, notes, reports, and completed runs. Records persist in this browser profile; export the complete research archive for a backup. Import merges by record ID and does not synchronize between browsers or devices.</p>
+          <p>Save an Analysis report and optionally link it to a research project. In <strong>Data</strong>, create projects and event collections, save collisions to a collection, and connect notes to projects, archived runs, and datasets. The research timeline joins projects, notes, reports, and completed runs. Records persist in this browser profile; export the complete research archive for a backup. Import merges by record ID and does not synchronize between browsers or devices.</p>
         </div>
       </section>
 
@@ -371,7 +371,7 @@ export default function HelpView({ onNavigate = () => {} }) {
 
       <section className="help-page-card help-shortcuts" id="shortcuts">
         <span className="section-kicker">KEYBOARD SHORTCUTS</span>
-        <p><kbd>F</kbd> fullscreen · <kbd>?</kbd> open quick help · <kbd>1–4</kbd> Overview, Detector, Event Display, Experiments. Use the staged operator panel for collider start-up and end-of-fill.</p>
+        <p><kbd>F</kbd> fullscreen · <kbd>?</kbd> open quick help · <kbd>1–3</kbd> Overview, Detector, Event Display. Use the staged operator panel for collider start-up and end-of-fill.</p>
       </section>
         </div>
       </details>

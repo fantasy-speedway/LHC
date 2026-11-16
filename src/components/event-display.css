@@ -51,14 +51,24 @@
 }
 
 .event-muon-summary span,
-.history-panel-header > div > p {
+.history-panel-header > div > p,
+.history-range,
+.event-display-toolbar > div:first-child > p {
   color: #b7c5c2;
   font-size: 12px;
   line-height: 1.5;
   margin: 0;
 }
 
+.history-range { padding: 9px 12px 0; }
+.event-display-toolbar > div:first-child > p { margin: 6px 0 0; }
+.event-history-pagination { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; }
+.event-history-pagination button { min-height: 40px; border: 1px solid #315057; background: #0d1a20; color: var(--cyan); padding: 8px 10px; cursor: pointer; }
+.event-history-pagination button:disabled { opacity: .45; cursor: not-allowed; }
+.event-history-pagination span { color: #b7c5c2; font-size: 12px; }
+
 @media (max-width: 560px) {
   .event-kinematics-card { padding: 10px; }
   .event-kinematics-metrics { gap: 10px 7px; }
+  .event-history-pagination { flex-wrap: wrap; }
 }
